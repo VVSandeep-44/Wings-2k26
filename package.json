@@ -1,0 +1,17 @@
+{
+  "name": "wings-2k26",
+  "version": "1.0.0",
+  "description": "WINGS 2k26 event website with backend API and SQLite database",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "libphonenumber-js": "^1.11.16",
+    "nodemailer": "^6.10.1",
+    "sqlite3": "^5.1.7",
+    "validator": "^13.12.0"
+  }
+}
