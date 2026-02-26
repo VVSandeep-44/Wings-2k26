@@ -12,7 +12,6 @@
     "cors": "^2.8.5",
     "express": "^4.21.2",
     "libphonenumber-js": "^1.11.16",
-    "nodemailer": "^6.10.1",
     "sqlite3": "^5.1.7",
     "validator": "^13.12.0"
   }

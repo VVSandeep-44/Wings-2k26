@@ -297,6 +297,7 @@
       const form = document.getElementById("registrationForm");
       const formStatus = document.getElementById("formStatus");
       const regIdEl = document.getElementById("regId");
+      const submitBtn = form.querySelector('button[type="submit"]');
       const qrLinkEl = document.getElementById("qrLink");
       const REGISTRATION_API_URL =
         window.WINGS_ENV?.REGISTRATION_API_URL || "/api/register";
@@ -416,6 +417,13 @@
         formStatus.textContent = message;
       }
 
+      function setSubmitting(isSubmitting) {
+        submitBtn.disabled = isSubmitting;
+        submitBtn.textContent = isSubmitting
+          ? "Loading..."
+          : "Submit Registration";
+      }
+
       function getSelectedEvents() {
         return Array.from(
           document.querySelectorAll('input[name="events"]:checked'),
@@ -502,22 +510,19 @@
           createdAt: new Date().toISOString(),
         };
 
+        setSubmitting(true);
+        setStatus("Loading...", "");
+
         try {
-          const apiResult = await submitRegistrationToApi(payload);
+          await submitRegistrationToApi(payload);
           saveRegistration(payload);
-          setStatus(
-            apiResult.message ||
-              "Registration successful! Your ID has been generated below.",
-            "success",
-          );
+          setStatus("Registration successful", "success");
           form.reset();
         } catch (error) {
           saveRegistration(payload);
-          setStatus(
-            error.message ||
-              "Saved locally. Server is currently unavailable, please try again later.",
-            "error",
-          );
+          setStatus("Registration failed", "error");
+        } finally {
+          setSubmitting(false);
         }
 
         // Here you can add code to send data to a server

@@ -2,7 +2,6 @@ const path = require("path");
 const dns = require("dns").promises;
 const express = require("express");
 const cors = require("cors");
-const nodemailer = require("nodemailer");
 const validator = require("validator");
 const { parsePhoneNumberFromString } = require("libphonenumber-js");
 const { db, initDatabase } = require("./db");
@@ -13,14 +12,10 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "wingsadmin";
 const ADMIN_SESSION_TOKEN = process.env.ADMIN_SESSION_TOKEN || "wings-session-token";
 const ADMIN_SESSION_COOKIE = "wings_admin_session";
 const MAX_PORT_RETRIES = 10;
-const SMTP_HOST = process.env.SMTP_HOST || "";
-const SMTP_PORT = Number(process.env.SMTP_PORT) || 587;
-const SMTP_SECURE = String(process.env.SMTP_SECURE || "false") === "true";
-const SMTP_USER = process.env.SMTP_USER || "";
-const SMTP_PASS = process.env.SMTP_PASS || "";
 const TEMP_INVITE_FROM_EMAIL = "226t1a0544sandeep@pydah.edu.in";
 const INVITE_FROM_EMAIL =
-  process.env.INVITE_FROM_EMAIL || TEMP_INVITE_FROM_EMAIL || SMTP_USER || "";
+  process.env.INVITE_FROM_EMAIL || TEMP_INVITE_FROM_EMAIL;
+const BREVO_API_KEY = process.env.BREVO_API_KEY || "";
 const CORS_ORIGINS = String(process.env.CORS_ORIGINS || "")
   .split(",")
   .map((origin) => origin.trim())
@@ -110,8 +105,6 @@ const requiredFields = [
   "createdAt",
 ];
 
-let smtpTransporter = null;
-
 const runDb = (query, params = []) =>
   new Promise((resolve, reject) => {
     db.run(query, params, function onRun(error) {
@@ -124,28 +117,6 @@ const runDb = (query, params = []) =>
   });
 
 const normalizePhone = (phone) => String(phone || "").replace(/[\s-]/g, "").trim();
-
-const createSmtpTransporter = () => {
-  if (smtpTransporter) {
-    return smtpTransporter;
-  }
-
-  if (!SMTP_HOST || !SMTP_USER || !SMTP_PASS || !INVITE_FROM_EMAIL) {
-    return null;
-  }
-
-  smtpTransporter = nodemailer.createTransport({
-    host: SMTP_HOST,
-    port: SMTP_PORT,
-    secure: SMTP_SECURE,
-    auth: {
-      user: SMTP_USER,
-      pass: SMTP_PASS,
-    },
-  });
-
-  return smtpTransporter;
-};
 
 const validateEmailInBackground = async (email) => {
   if (!validator.isEmail(email)) {
@@ -187,37 +158,62 @@ const validatePhoneInBackground = (phone) => {
 };
 
 const sendInvitationEmail = async ({ name, email, regId, events }) => {
-  const transporter = createSmtpTransporter();
-
-  if (!transporter) {
-    return { sent: false, reason: "SMTP is not configured" };
+  if (!BREVO_API_KEY) {
+    return { sent: false, reason: "Brevo is not configured" };
   }
 
   const eventsText = Array.isArray(events) ? events.join(", ") : String(events || "");
 
-  const mailOptions = {
-    from: INVITE_FROM_EMAIL,
-    to: email,
-    subject: `Invitation confirmed - ${EVENT_NAME}`,
-    text: `Hi ${name},\n\nYour registration for ${EVENT_NAME} is confirmed.\nRegistration ID: ${regId}\nEvent Date: ${EVENT_DATE_TEXT}\nVenue: ${EVENT_VENUE_TEXT}\nSelected Events: ${eventsText}\n\nWe look forward to seeing you!`,
-    html: `
-      <p>Hi <strong>${validator.escape(name)}</strong>,</p>
-      <p>Your registration for <strong>${EVENT_NAME}</strong> is confirmed.</p>
-      <p>
-        <strong>Registration ID:</strong> ${validator.escape(regId)}<br/>
-        <strong>Event Date:</strong> ${EVENT_DATE_TEXT}<br/>
-        <strong>Venue:</strong> ${EVENT_VENUE_TEXT}<br/>
-        <strong>Selected Events:</strong> ${validator.escape(eventsText)}
-      </p>
-      <p>We look forward to seeing you!</p>
-    `,
-  };
+  const htmlContent = `
+    <p>Hi <strong>${validator.escape(name)}</strong>,</p>
+    <p>Your registration for <strong>${EVENT_NAME}</strong> is confirmed.</p>
+    <p>
+      <strong>Registration ID:</strong> ${validator.escape(regId)}<br/>
+      <strong>Event Date:</strong> ${EVENT_DATE_TEXT}<br/>
+      <strong>Venue:</strong> ${EVENT_VENUE_TEXT}<br/>
+      <strong>Selected Events:</strong> ${validator.escape(eventsText)}
+    </p>
+    <p>We look forward to seeing you!</p>
+  `;
 
   try {
-    await transporter.sendMail(mailOptions);
+    const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "api-key": BREVO_API_KEY,
+      },
+      body: JSON.stringify({
+        sender: { email: INVITE_FROM_EMAIL, name: EVENT_NAME },
+        to: [{ email }],
+        subject: `Invitation confirmed - ${EVENT_NAME}`,
+        htmlContent,
+      }),
+    });
+
+    if (!response.ok) {
+      let brevoError = "Invitation mail failed";
+
+      try {
+        const errorPayload = await response.json();
+        brevoError =
+          errorPayload?.message || errorPayload?.code || response.statusText;
+      } catch (_parseError) {
+        brevoError = response.statusText || "Invitation mail failed";
+      }
+
+      return {
+        sent: false,
+        reason: brevoError,
+      };
+    }
+
     return { sent: true };
   } catch (error) {
-    return { sent: false, reason: error.message || "Invitation mail failed" };
+    return {
+      sent: false,
+      reason: error.message || "Invitation mail failed",
+    };
   }
 };
 
