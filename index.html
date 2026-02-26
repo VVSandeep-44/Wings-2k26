@@ -244,6 +244,9 @@
           <h3><i class="fas fa-qrcode"></i> Scan to Register</h3>
           <div id="qrcode"></div>
           <p>Scan this QR code to open the registration form on your phone!</p>
+          <p>
+            <a id="qrLink" href="#register">Open registration link</a>
+          </p>
           <p class="reg-id" id="regId"></p>
           <button class="download-btn" onclick="downloadQR()">
             <i class="fas fa-download"></i> Download QR Code
@@ -294,6 +297,7 @@
       const form = document.getElementById("registrationForm");
       const formStatus = document.getElementById("formStatus");
       const regIdEl = document.getElementById("regId");
+      const qrLinkEl = document.getElementById("qrLink");
       const REGISTRATION_API_URL =
         window.WINGS_ENV?.REGISTRATION_API_URL || "/api/register";
       const EVENT_START_DATE = "2026-03-13T09:00:00+05:30";
@@ -354,7 +358,11 @@
       setupFeaturesMarquee();
 
       // Generate QR Code
-      const qrUrl = window.location.href.split("#")[0] + "#register";
+      const qrUrl = "https://wings-2k26.netlify.app/#register";
+      qrLinkEl.href = qrUrl;
+      qrLinkEl.textContent = qrUrl;
+      qrLinkEl.target = "_blank";
+      qrLinkEl.rel = "noopener noreferrer";
       new QRCode(document.getElementById("qrcode"), {
         text: qrUrl,
         width: 200,

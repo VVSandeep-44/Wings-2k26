@@ -44,7 +44,7 @@ app.use(
 
       return callback(new Error("Origin not allowed by CORS"));
     },
-    methods: ["GET", "POST", "OPTIONS"],
+    methods: ["GET", "POST", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "x-admin-password"],
   })
 );
@@ -500,6 +500,40 @@ app.get("/api/registrations", requireAdminAuth, (req, res) => {
       return res.json({ success: true, count: normalized.length, data: normalized });
     }
   );
+});
+
+app.delete("/api/registrations/:id", requireAdminAuth, async (req, res) => {
+  const registrationId = Number(req.params.id);
+
+  if (!Number.isInteger(registrationId) || registrationId <= 0) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid registration id",
+    });
+  }
+
+  try {
+    const result = await runDb("DELETE FROM registrations WHERE id = ?", [registrationId]);
+
+    if (!result.changes) {
+      return res.status(404).json({
+        success: false,
+        message: "Registration not found",
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: "Registration deleted successfully",
+      deletedId: registrationId,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Could not delete registration",
+      error: error.message,
+    });
+  }
 });
 
 app.get("/admin", requireAdminSession, (_req, res) => {

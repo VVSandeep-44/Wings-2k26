@@ -190,6 +190,19 @@
         background: linear-gradient(135deg, #1f2650, #2a3471);
       }
 
+      .delete-btn {
+        width: auto;
+        min-width: 88px;
+        padding: 8px 10px;
+        font-size: 0.82rem;
+        background: linear-gradient(135deg, #5a213f, #8a2b48);
+      }
+
+      .delete-btn:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+      }
+
       #searchInput {
         min-width: 0;
       }
@@ -313,11 +326,12 @@
                 <th>Events</th>
                 <th>Reg ID</th>
                 <th>Created</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody id="rows">
               <tr>
-                <td class="empty" colspan="8">No data loaded</td>
+                <td class="empty" colspan="9">No data loaded</td>
               </tr>
             </tbody>
           </table>
@@ -366,11 +380,19 @@
         return date.toLocaleString();
       };
 
+      const escapeHtml = (value) =>
+        String(value ?? "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/\"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+
       const renderRows = (data) => {
         latestRegistrations = data;
 
         if (!data.length) {
-          rowsEl.innerHTML = '<tr><td class="empty" colspan="8">No registrations found</td></tr>';
+          rowsEl.innerHTML = '<tr><td class="empty" colspan="9">No registrations found</td></tr>';
           return;
         }
 
@@ -391,10 +413,54 @@
                   .join("")}</td>
                 <td data-label="Reg ID">${row.regId}</td>
                 <td data-label="Created">${formatDate(row.createdAt)}</td>
+                <td data-label="Actions">
+                  <button
+                    class="delete-btn"
+                    data-delete-id="${row.id}"
+                    data-delete-name="${escapeHtml(row.name)}"
+                  >
+                    Delete
+                  </button>
+                </td>
               </tr>
             `
           )
           .join("");
+      };
+
+      const deleteRegistration = async (id, name, buttonEl) => {
+        const confirmed = window.confirm(
+          `Delete registration for ${name || "this user"}? This cannot be undone.`
+        );
+
+        if (!confirmed) {
+          return;
+        }
+
+        buttonEl.disabled = true;
+        buttonEl.textContent = "Deleting...";
+        setStatus("Deleting registration...");
+
+        try {
+          const response = await fetch(`/api/registrations/${id}`, {
+            method: "DELETE",
+            credentials: "same-origin",
+            cache: "no-store",
+          });
+
+          const result = await response.json().catch(() => ({}));
+
+          if (!response.ok || !result.success) {
+            throw new Error(result.message || "Failed to delete registration");
+          }
+
+          setStatus("Registration deleted successfully.", "ok");
+          await loadRegistrations();
+        } catch (error) {
+          buttonEl.disabled = false;
+          buttonEl.textContent = "Delete";
+          setStatus(error.message || "Could not delete registration.", "err");
+        }
       };
 
       const applyFilters = () => {
@@ -467,7 +533,7 @@
           setStatus(`Loaded ${result.count} registration(s).`, "ok");
         } catch (error) {
           allRegistrations = [];
-          rowsEl.innerHTML = '<tr><td class="empty" colspan="8">Could not load data</td></tr>';
+          rowsEl.innerHTML = '<tr><td class="empty" colspan="9">Could not load data</td></tr>';
           setStatus(error.message || "Unexpected error occurred.", "err");
         }
       };
@@ -549,6 +615,24 @@
       searchInput.addEventListener("input", applyFilters);
       eventFilterInput.addEventListener("change", applyFilters);
       limitInput.addEventListener("change", loadRegistrations);
+
+      rowsEl.addEventListener("click", (event) => {
+        const button = event.target.closest("button[data-delete-id]");
+
+        if (!button) {
+          return;
+        }
+
+        const id = Number(button.dataset.deleteId);
+        const name = button.dataset.deleteName || "registrant";
+
+        if (!id) {
+          setStatus("Invalid registration id.", "err");
+          return;
+        }
+
+        deleteRegistration(id, name, button);
+      });
 
       logoutBtn.addEventListener("click", async () => {
         logoutBtn.disabled = true;
