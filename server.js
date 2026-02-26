@@ -1,6 +1,7 @@
 const path = require("path");
 const dns = require("dns").promises;
 const express = require("express");
+const cors = require("cors");
 const nodemailer = require("nodemailer");
 const validator = require("validator");
 const { parsePhoneNumberFromString } = require("libphonenumber-js");
@@ -20,12 +21,33 @@ const SMTP_PASS = process.env.SMTP_PASS || "";
 const TEMP_INVITE_FROM_EMAIL = "226t1a0544sandeep@pydah.edu.in";
 const INVITE_FROM_EMAIL =
   process.env.INVITE_FROM_EMAIL || TEMP_INVITE_FROM_EMAIL || SMTP_USER || "";
+const CORS_ORIGINS = String(process.env.CORS_ORIGINS || "")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
 const EVENT_NAME = "WINGS 2k26";
 const EVENT_DATE_TEXT = "March 13-14, 2026";
 const EVENT_VENUE_TEXT = "Pydah College of Engineering";
 
 initDatabase();
 
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin) {
+        return callback(null, true);
+      }
+
+      if (CORS_ORIGINS.length === 0 || CORS_ORIGINS.includes(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error("Origin not allowed by CORS"));
+    },
+    methods: ["GET", "POST", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "x-admin-password"],
+  })
+);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(__dirname));
