@@ -4,7 +4,6 @@ const dns = require("dns").promises;
 const express = require("express");
 const cors = require("cors");
 const validator = require("validator");
-const { parsePhoneNumberFromString } = require("libphonenumber-js");
 const {
   initDatabase,
   createRegistration,
@@ -230,22 +229,6 @@ const validateEmailInBackground = async (email) => {
   return { valid: true, reason: "Email verified" };
 };
 
-const validatePhoneInBackground = (phone) => {
-  const normalized = normalizePhone(phone);
-
-  if (!/^\+?[0-9]{10,15}$/.test(normalized)) {
-    return { valid: false, reason: "Phone number format is invalid" };
-  }
-
-  const parsed = parsePhoneNumberFromString(normalized, "IN");
-
-  if (!parsed || !parsed.isValid()) {
-    return { valid: false, reason: "Phone number could not be verified" };
-  }
-
-  return { valid: true, reason: "Phone verified", e164: parsed.number };
-};
-
 const sendInvitationEmail = async ({ name, email, regId, events }) => {
   if (!BREVO_API_KEY) {
     return {
@@ -310,20 +293,14 @@ const runRegistrationValidationWorkflow = async ({
   id,
   name,
   email,
-  phone,
   regId,
   events,
 }) => {
   try {
-    const [emailResult, phoneResult] = await Promise.all([
-      validateEmailInBackground(email),
-      Promise.resolve(validatePhoneInBackground(phone)),
-    ]);
+    const emailResult = await validateEmailInBackground(email);
 
-    if (!emailResult.valid || !phoneResult.valid) {
-      const reasons = [emailResult.reason, phoneResult.reason]
-        .filter(Boolean)
-        .join("; ");
+    if (!emailResult.valid) {
+      const reasons = [emailResult.reason].filter(Boolean).join("; ");
 
       await updateRegistrationById(id, {
         validationStatus: "failed",
@@ -337,7 +314,7 @@ const runRegistrationValidationWorkflow = async ({
 
     await updateRegistrationById(id, {
       validationStatus: "verified",
-      validationMessage: "Email and phone verified",
+      validationMessage: "Email verified",
       updatedAt: new Date().toISOString(),
     });
 
@@ -347,8 +324,8 @@ const runRegistrationValidationWorkflow = async ({
       invitationStatus: invitation.sent ? "sent" : "failed",
       invitationSentAt: invitation.sent ? new Date().toISOString() : null,
       validationMessage: invitation.sent
-        ? "Email and phone verified; invitation sent"
-        : `Email and phone verified; invitation failed: ${invitation.reason}`,
+        ? "Email verified; invitation sent"
+        : `Email verified; invitation failed: ${invitation.reason}`,
       updatedAt: new Date().toISOString(),
     });
   } catch (error) {

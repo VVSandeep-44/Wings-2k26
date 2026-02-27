@@ -325,13 +325,14 @@
                 <th>Dept / Year</th>
                 <th>Events</th>
                 <th>Reg ID</th>
+                <th>Validation / Invite</th>
                 <th>Created</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody id="rows">
               <tr>
-                <td class="empty" colspan="9">No data loaded</td>
+                <td class="empty" colspan="10">No data loaded</td>
               </tr>
             </tbody>
           </table>
@@ -392,7 +393,7 @@
         latestRegistrations = data;
 
         if (!data.length) {
-          rowsEl.innerHTML = '<tr><td class="empty" colspan="9">No registrations found</td></tr>';
+          rowsEl.innerHTML = '<tr><td class="empty" colspan="10">No registrations found</td></tr>';
           return;
         }
 
@@ -412,6 +413,11 @@
                   .map((event) => `<span class="badge">${event}</span>`)
                   .join("")}</td>
                 <td data-label="Reg ID">${row.regId}</td>
+                <td data-label="Validation / Invite">
+                  <div><span class="badge">validation: ${escapeHtml(row.validationStatus || "pending")}</span></div>
+                  <div><span class="badge">invite: ${escapeHtml(row.invitationStatus || "queued")}</span></div>
+                  <div class="meta">${escapeHtml(row.validationMessage || "-")}</div>
+                </td>
                 <td data-label="Created">${formatDate(row.createdAt)}</td>
                 <td data-label="Actions">
                   <button
@@ -533,7 +539,7 @@
           setStatus(`Loaded ${result.count} registration(s).`, "ok");
         } catch (error) {
           allRegistrations = [];
-          rowsEl.innerHTML = '<tr><td class="empty" colspan="9">Could not load data</td></tr>';
+          rowsEl.innerHTML = '<tr><td class="empty" colspan="10">Could not load data</td></tr>';
           setStatus(error.message || "Unexpected error occurred.", "err");
         }
       };
@@ -566,6 +572,9 @@
           "Year",
           "Events",
           "Registration ID",
+          "Validation Status",
+          "Invitation Status",
+          "Validation Message",
           "Created At",
         ];
 
@@ -582,6 +591,9 @@
               escapeCsv(row.year),
               escapeCsv((row.events || []).join(" | ")),
               escapeCsv(row.regId),
+              escapeCsv(row.validationStatus || "pending"),
+              escapeCsv(row.invitationStatus || "queued"),
+              escapeCsv(row.validationMessage || ""),
               escapeCsv(formatDate(row.createdAt)),
             ].join(",")
           );
