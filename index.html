@@ -519,8 +519,7 @@
           setStatus("Registration successful", "success");
           form.reset();
         } catch (error) {
-          saveRegistration(payload);
-          setStatus("Registration failed", "error");
+          setStatus(error.message || "Registration failed", "error");
         } finally {
           setSubmitting(false);
         }

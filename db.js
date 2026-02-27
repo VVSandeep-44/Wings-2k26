@@ -1,98 +1,100 @@
-const fs = require("fs");
-const path = require("path");
-const sqlite3 = require("sqlite3").verbose();
+const { MongoClient } = require("mongodb");
 
-const dataDir = path.join(__dirname, "data");
-const dbPath = path.join(dataDir, "wings2k26.db");
+const MONGODB_URI = process.env.MONGODB_URI || process.env.DATABASE_URL || "";
+const DB_NAME = process.env.MONGODB_DB_NAME || "wings2k26";
+const REGISTRATIONS_COLLECTION = "registrations";
+const COUNTERS_COLLECTION = "counters";
 
-if (!fs.existsSync(dataDir)) {
-  fs.mkdirSync(dataDir, { recursive: true });
-}
+let client;
+let database;
+let registrationsCollection;
 
-const db = new sqlite3.Database(dbPath);
+const getRegistrationsCollection = () => {
+  if (!registrationsCollection) {
+    throw new Error("Database is not initialized");
+  }
 
-const ensureRegistrationColumns = () => {
-  db.all("PRAGMA table_info(registrations)", (error, rows = []) => {
-    if (error) {
-      console.error("Failed to inspect registrations table:", error.message);
-      return;
-    }
-
-    const existingColumns = new Set(rows.map((row) => row.name));
-    const requiredColumns = [
-      {
-        name: "validation_status",
-        definition: "TEXT NOT NULL DEFAULT 'pending'",
-      },
-      {
-        name: "validation_message",
-        definition: "TEXT",
-      },
-      {
-        name: "invitation_status",
-        definition: "TEXT NOT NULL DEFAULT 'queued'",
-      },
-      {
-        name: "invitation_sent_at",
-        definition: "TEXT",
-      },
-      {
-        name: "updated_at",
-        definition: "TEXT",
-      },
-    ];
-
-    requiredColumns.forEach(({ name, definition }) => {
-      if (existingColumns.has(name)) {
-        return;
-      }
-
-      db.run(
-        `ALTER TABLE registrations ADD COLUMN ${name} ${definition}`,
-        (alterError) => {
-          if (alterError) {
-            console.error(
-              `Failed to add column ${name} to registrations:`,
-              alterError.message
-            );
-          }
-        }
-      );
-    });
-  });
+  return registrationsCollection;
 };
 
-const initDatabase = () => {
-  db.serialize(() => {
-    db.run(`
-      CREATE TABLE IF NOT EXISTS registrations (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        email TEXT NOT NULL,
-        phone TEXT NOT NULL,
-        college TEXT NOT NULL,
-        department TEXT NOT NULL,
-        year TEXT NOT NULL,
-        events TEXT NOT NULL,
-        reg_id TEXT NOT NULL UNIQUE,
-        created_at TEXT NOT NULL,
-        validation_status TEXT NOT NULL DEFAULT 'pending',
-        validation_message TEXT,
-        invitation_status TEXT NOT NULL DEFAULT 'queued',
-        invitation_sent_at TEXT,
-        updated_at TEXT
-      )
-    `);
+const getNextRegistrationId = async () => {
+  if (!database) {
+    throw new Error("Database is not initialized");
+  }
 
-    ensureRegistrationColumns();
+  const counters = database.collection(COUNTERS_COLLECTION);
+  const counterResult = await counters.findOneAndUpdate(
+    { _id: "registrationId" },
+    { $inc: { value: 1 } },
+    { upsert: true, returnDocument: "after" }
+  );
 
-    db.run(
-      "CREATE INDEX IF NOT EXISTS idx_registrations_created_at ON registrations(created_at DESC)"
-    );
-  });
+  return Number(counterResult.value?.value || 1);
+};
+
+const initDatabase = async () => {
+  if (!MONGODB_URI) {
+    throw new Error("MONGODB_URI is not configured");
+  }
+
+  if (database && registrationsCollection) {
+    return;
+  }
+
+  client = new MongoClient(MONGODB_URI);
+  await client.connect();
+  database = client.db(DB_NAME);
+  registrationsCollection = database.collection(REGISTRATIONS_COLLECTION);
+
+  await registrationsCollection.createIndex({ regId: 1 }, { unique: true });
+  await registrationsCollection.createIndex({ createdAt: -1 });
+
+  console.log(`MongoDB connected: ${DB_NAME}.${REGISTRATIONS_COLLECTION}`);
+};
+
+const createRegistration = async (registration) => {
+  const collection = getRegistrationsCollection();
+  const nextId = await getNextRegistrationId();
+
+  const document = {
+    id: nextId,
+    ...registration,
+  };
+
+  await collection.insertOne(document);
+  return { lastID: nextId };
+};
+
+const updateRegistrationById = async (id, updates) => {
+  const collection = getRegistrationsCollection();
+  const updateResult = await collection.updateOne(
+    { id: Number(id) },
+    { $set: updates }
+  );
+
+  return { changes: updateResult.modifiedCount };
+};
+
+const listRegistrations = async (limit) => {
+  const collection = getRegistrationsCollection();
+  return collection
+    .find({})
+    .sort({ createdAt: -1 })
+    .limit(Number(limit))
+    .project({ _id: 0 })
+    .toArray();
+};
+
+const deleteRegistrationById = async (id) => {
+  const collection = getRegistrationsCollection();
+  const deleteResult = await collection.deleteOne({ id: Number(id) });
+  return { changes: deleteResult.deletedCount };
 };
 
 module.exports = {
-  db,
   initDatabase,
+  createRegistration,
+  updateRegistrationById,
+  listRegistrations,
+  deleteRegistrationById,
 };

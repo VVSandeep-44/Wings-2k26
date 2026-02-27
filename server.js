@@ -1,21 +1,34 @@
 const path = require("path");
+const https = require("https");
 const dns = require("dns").promises;
 const express = require("express");
 const cors = require("cors");
 const validator = require("validator");
 const { parsePhoneNumberFromString } = require("libphonenumber-js");
-const { db, initDatabase } = require("./db");
+const {
+  initDatabase,
+  createRegistration,
+  updateRegistrationById,
+  listRegistrations,
+  deleteRegistrationById,
+} = require("./db");
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "wingsadmin";
-const ADMIN_SESSION_TOKEN = process.env.ADMIN_SESSION_TOKEN || "wings-session-token";
+const IS_PRODUCTION = process.env.NODE_ENV === "production";
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "WingsAdmin@2026";
+const ADMIN_SESSION_TOKEN = process.env.ADMIN_SESSION_TOKEN || "wings_secure_admin_session_token_2026";
 const ADMIN_SESSION_COOKIE = "wings_admin_session";
 const MAX_PORT_RETRIES = 10;
 const TEMP_INVITE_FROM_EMAIL = "226t1a0544sandeep@pydah.edu.in";
 const INVITE_FROM_EMAIL =
   process.env.INVITE_FROM_EMAIL || TEMP_INVITE_FROM_EMAIL;
-const BREVO_API_KEY = process.env.BREVO_API_KEY || "";
+const BREVO_API_KEY =
+  process.env.BREVO_API_KEY ||
+  process.env.BREVO_SMTP_KEY ||
+  process.env.SMTP_PASS ||
+  process.env.SMTP_PASSWORD ||
+  "";
 const CORS_ORIGINS = String(process.env.CORS_ORIGINS || "")
   .split(",")
   .map((origin) => origin.trim())
@@ -24,7 +37,94 @@ const EVENT_NAME = "WINGS 2k26";
 const EVENT_DATE_TEXT = "March 13-14, 2026";
 const EVENT_VENUE_TEXT = "Pydah College of Engineering";
 
-initDatabase();
+const buildAdminCookie = (value, maxAge) => {
+  const secureFlag = IS_PRODUCTION ? "; Secure" : "";
+  return `${ADMIN_SESSION_COOKIE}=${encodeURIComponent(
+    value
+  )}; Path=/; HttpOnly; SameSite=Strict${secureFlag}; Max-Age=${maxAge}`;
+};
+
+if (!process.env.ADMIN_PASSWORD) {
+  console.warn("ADMIN_PASSWORD is not set. Using fallback value; set env var in production.");
+}
+
+if (!process.env.ADMIN_SESSION_TOKEN) {
+  console.warn(
+    "ADMIN_SESSION_TOKEN is not set. Using fallback value; set env var in production."
+  );
+}
+
+if (!BREVO_API_KEY) {
+  console.warn(
+    "Brevo API key is not configured. Invitation emails will fail until BREVO_API_KEY (or BREVO_SMTP_KEY) is set."
+  );
+}
+
+const requestJson = (method, url, payload, headers = {}) =>
+  new Promise((resolve, reject) => {
+    const requestUrl = new URL(url);
+    const hasBody = payload !== undefined && payload !== null;
+    const requestBody = hasBody ? JSON.stringify(payload) : "";
+    const requestHeaders = {
+      ...headers,
+    };
+
+    if (hasBody) {
+      requestHeaders["Content-Type"] = "application/json";
+      requestHeaders["Content-Length"] = Buffer.byteLength(requestBody);
+    }
+
+    const request = https.request(
+      {
+        protocol: requestUrl.protocol,
+        hostname: requestUrl.hostname,
+        port: requestUrl.port || undefined,
+        path: `${requestUrl.pathname}${requestUrl.search}`,
+        method,
+        headers: requestHeaders,
+      },
+      (response) => {
+        let responseBody = "";
+
+        response.on("data", (chunk) => {
+          responseBody += chunk;
+        });
+
+        response.on("end", () => {
+          let parsedData = null;
+
+          if (responseBody) {
+            try {
+              parsedData = JSON.parse(responseBody);
+            } catch (_parseError) {
+              parsedData = null;
+            }
+          }
+
+          resolve({
+            ok: Number(response.statusCode) >= 200 && Number(response.statusCode) < 300,
+            statusCode: Number(response.statusCode) || 0,
+            statusText: response.statusMessage || "",
+            data: parsedData,
+            rawBody: responseBody,
+          });
+        });
+      }
+    );
+
+    request.on("error", reject);
+
+    if (hasBody) {
+      request.write(requestBody);
+    }
+
+    request.end();
+  });
+
+const postJson = (url, payload, headers = {}) =>
+  requestJson("POST", url, payload, headers);
+
+const getJson = (url, headers = {}) => requestJson("GET", url, null, headers);
 
 app.use(
   cors({
@@ -105,17 +205,6 @@ const requiredFields = [
   "createdAt",
 ];
 
-const runDb = (query, params = []) =>
-  new Promise((resolve, reject) => {
-    db.run(query, params, function onRun(error) {
-      if (error) {
-        return reject(error);
-      }
-
-      return resolve({ lastID: this.lastID, changes: this.changes });
-    });
-  });
-
 const normalizePhone = (phone) => String(phone || "").replace(/[\s-]/g, "").trim();
 
 const validateEmailInBackground = async (email) => {
@@ -159,7 +248,11 @@ const validatePhoneInBackground = (phone) => {
 
 const sendInvitationEmail = async ({ name, email, regId, events }) => {
   if (!BREVO_API_KEY) {
-    return { sent: false, reason: "Brevo is not configured" };
+    return {
+      sent: false,
+      reason:
+        "Brevo is not configured (set BREVO_API_KEY or BREVO_SMTP_KEY in environment)",
+    };
   }
 
   const eventsText = Array.isArray(events) ? events.join(", ") : String(events || "");
@@ -177,30 +270,26 @@ const sendInvitationEmail = async ({ name, email, regId, events }) => {
   `;
 
   try {
-    const response = await fetch("https://api.brevo.com/v3/smtp/email", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "api-key": BREVO_API_KEY,
-      },
-      body: JSON.stringify({
+    const response = await postJson(
+      "https://api.brevo.com/v3/smtp/email",
+      {
         sender: { email: INVITE_FROM_EMAIL, name: EVENT_NAME },
         to: [{ email }],
         subject: `Invitation confirmed - ${EVENT_NAME}`,
         htmlContent,
-      }),
-    });
+      },
+      {
+        "api-key": BREVO_API_KEY,
+      }
+    );
 
     if (!response.ok) {
-      let brevoError = "Invitation mail failed";
-
-      try {
-        const errorPayload = await response.json();
-        brevoError =
-          errorPayload?.message || errorPayload?.code || response.statusText;
-      } catch (_parseError) {
-        brevoError = response.statusText || "Invitation mail failed";
-      }
+      const brevoError =
+        response.data?.message ||
+        response.data?.code ||
+        response.statusText ||
+        response.rawBody ||
+        "Invitation mail failed";
 
       return {
         sent: false,
@@ -236,76 +325,115 @@ const runRegistrationValidationWorkflow = async ({
         .filter(Boolean)
         .join("; ");
 
-      await runDb(
-        `
-          UPDATE registrations
-          SET validation_status = ?,
-              validation_message = ?,
-              invitation_status = ?,
-              updated_at = ?
-          WHERE id = ?
-        `,
-        ["failed", reasons, "skipped", new Date().toISOString(), id]
-      );
+      await updateRegistrationById(id, {
+        validationStatus: "failed",
+        validationMessage: reasons,
+        invitationStatus: "skipped",
+        updatedAt: new Date().toISOString(),
+      });
 
       return;
     }
 
-    await runDb(
-      `
-        UPDATE registrations
-        SET validation_status = ?,
-            validation_message = ?,
-            updated_at = ?
-        WHERE id = ?
-      `,
-      ["verified", "Email and phone verified", new Date().toISOString(), id]
-    );
+    await updateRegistrationById(id, {
+      validationStatus: "verified",
+      validationMessage: "Email and phone verified",
+      updatedAt: new Date().toISOString(),
+    });
 
     const invitation = await sendInvitationEmail({ name, email, regId, events });
 
-    await runDb(
-      `
-        UPDATE registrations
-        SET invitation_status = ?,
-            invitation_sent_at = ?,
-            validation_message = ?,
-            updated_at = ?
-        WHERE id = ?
-      `,
-      [
-        invitation.sent ? "sent" : "failed",
-        invitation.sent ? new Date().toISOString() : null,
-        invitation.sent
-          ? "Email and phone verified; invitation sent"
-          : `Email and phone verified; invitation failed: ${invitation.reason}`,
-        new Date().toISOString(),
-        id,
-      ]
-    );
+    await updateRegistrationById(id, {
+      invitationStatus: invitation.sent ? "sent" : "failed",
+      invitationSentAt: invitation.sent ? new Date().toISOString() : null,
+      validationMessage: invitation.sent
+        ? "Email and phone verified; invitation sent"
+        : `Email and phone verified; invitation failed: ${invitation.reason}`,
+      updatedAt: new Date().toISOString(),
+    });
   } catch (error) {
-    await runDb(
-      `
-        UPDATE registrations
-        SET validation_status = ?,
-            validation_message = ?,
-            invitation_status = ?,
-            updated_at = ?
-        WHERE id = ?
-      `,
-      [
-        "failed",
-        `Background verification failed: ${error.message}`,
-        "failed",
-        new Date().toISOString(),
-        id,
-      ]
-    ).catch(() => undefined);
+    await updateRegistrationById(id, {
+      validationStatus: "failed",
+      validationMessage: `Background verification failed: ${error.message}`,
+      invitationStatus: "failed",
+      updatedAt: new Date().toISOString(),
+    }).catch(() => undefined);
   }
 };
 
 app.get("/api/health", (_req, res) => {
   res.json({ status: "ok", service: "WINGS 2k26 API" });
+});
+
+app.get("/api/health/mail", async (_req, res) => {
+  const hasApiKey = Boolean(BREVO_API_KEY);
+  const hasFromEmail = Boolean(INVITE_FROM_EMAIL);
+  const usingFallbackFromEmail = !process.env.INVITE_FROM_EMAIL;
+
+  if (!hasApiKey || !hasFromEmail) {
+    return res.status(503).json({
+      status: "error",
+      provider: "brevo",
+      configured: false,
+      details: {
+        hasApiKey,
+        hasFromEmail,
+        usingFallbackFromEmail,
+      },
+      message:
+        "Mail is not fully configured. Set BREVO_API_KEY (or BREVO_SMTP_KEY) and INVITE_FROM_EMAIL.",
+    });
+  }
+
+  try {
+    const accountCheck = await getJson("https://api.brevo.com/v3/account", {
+      "api-key": BREVO_API_KEY,
+      Accept: "application/json",
+    });
+
+    if (!accountCheck.ok) {
+      return res.status(502).json({
+        status: "error",
+        provider: "brevo",
+        configured: true,
+        details: {
+          hasApiKey,
+          hasFromEmail,
+          usingFallbackFromEmail,
+        },
+        message:
+          accountCheck.data?.message ||
+          accountCheck.data?.code ||
+          accountCheck.statusText ||
+          "Brevo API check failed",
+      });
+    }
+
+    return res.json({
+      status: "ok",
+      provider: "brevo",
+      configured: true,
+      details: {
+        hasApiKey,
+        hasFromEmail,
+        usingFallbackFromEmail,
+      },
+      accountEmail: accountCheck.data?.email || null,
+      message: "Brevo configuration is valid",
+    });
+  } catch (error) {
+    return res.status(502).json({
+      status: "error",
+      provider: "brevo",
+      configured: true,
+      details: {
+        hasApiKey,
+        hasFromEmail,
+        usingFallbackFromEmail,
+      },
+      message: error.message || "Brevo API check failed",
+    });
+  }
 });
 
 app.post("/api/admin-login", (req, res) => {
@@ -320,9 +448,7 @@ app.post("/api/admin-login", (req, res) => {
 
   res.setHeader(
     "Set-Cookie",
-    `${ADMIN_SESSION_COOKIE}=${encodeURIComponent(
-      ADMIN_SESSION_TOKEN
-    )}; Path=/; HttpOnly; SameSite=Strict; Max-Age=14400`
+    buildAdminCookie(ADMIN_SESSION_TOKEN, 14400)
   );
 
   return res.json({ success: true, message: "Admin session started" });
@@ -331,7 +457,7 @@ app.post("/api/admin-login", (req, res) => {
 app.post("/api/admin-logout", (_req, res) => {
   res.setHeader(
     "Set-Cookie",
-    `${ADMIN_SESSION_COOKIE}=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0`
+    buildAdminCookie("", 0)
   );
 
   return res.json({ success: true, message: "Logged out" });
@@ -375,45 +501,33 @@ app.post("/api/register", async (req, res) => {
 
   const eventsAsString = Array.isArray(payload.events)
     ? payload.events.join(",")
-    : String(payload.events);
+    : String(payload.events || "");
+
+  const eventsArray = Array.isArray(payload.events)
+    ? payload.events
+    : String(payload.events || "")
+        .split(",")
+        .map((entry) => entry.trim())
+        .filter(Boolean);
 
   try {
-    const insertResult = await runDb(
-      `
-        INSERT INTO registrations
-        (
-          name,
-          email,
-          phone,
-          college,
-          department,
-          year,
-          events,
-          reg_id,
-          created_at,
-          validation_status,
-          validation_message,
-          invitation_status,
-          updated_at
-        )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `,
-      [
-        String(payload.name).trim(),
-        normalizedEmail,
-        normalizedPhone,
-        String(payload.college).trim(),
-        String(payload.department).trim(),
-        String(payload.year).trim(),
-        eventsAsString,
-        String(payload.regId).trim(),
-        String(payload.createdAt).trim(),
-        "pending",
-        "Verification in progress",
-        "queued",
-        timestamp,
-      ]
-    );
+    const insertResult = await createRegistration({
+      name: String(payload.name).trim(),
+      email: normalizedEmail,
+      phone: normalizedPhone,
+      college: String(payload.college).trim(),
+      department: String(payload.department).trim(),
+      year: String(payload.year).trim(),
+      events: eventsArray,
+      eventsText: eventsAsString,
+      regId: String(payload.regId).trim(),
+      createdAt: String(payload.createdAt).trim(),
+      validationStatus: "pending",
+      validationMessage: "Verification in progress",
+      invitationStatus: "queued",
+      invitationSentAt: null,
+      updatedAt: timestamp,
+    });
 
     setImmediate(() => {
       runRegistrationValidationWorkflow({
@@ -422,12 +536,7 @@ app.post("/api/register", async (req, res) => {
         email: normalizedEmail,
         phone: normalizedPhone,
         regId: String(payload.regId).trim(),
-        events: Array.isArray(payload.events)
-          ? payload.events
-          : String(payload.events)
-              .split(",")
-              .map((entry) => entry.trim())
-              .filter(Boolean),
+        events: eventsArray,
       });
     });
 
@@ -438,7 +547,7 @@ app.post("/api/register", async (req, res) => {
         "Registration saved. Email and phone verification is running in background. Invitation mail will be sent after verification.",
     });
   } catch (error) {
-    if (error.message.includes("UNIQUE constraint failed: registrations.reg_id")) {
+    if (error?.code === 11000) {
       return res.status(409).json({
         success: false,
         message: "Registration ID already exists. Please resubmit.",
@@ -453,49 +562,42 @@ app.post("/api/register", async (req, res) => {
   }
 });
 
-app.get("/api/registrations", requireAdminAuth, (req, res) => {
+app.get("/api/registrations", requireAdminAuth, async (req, res) => {
   const limit = Math.min(Number(req.query.limit) || 20, 100);
 
-  db.all(
-    `
-      SELECT
-        id,
-        name,
-        email,
-        phone,
-        college,
-        department,
-        year,
-        events,
-        reg_id AS regId,
-        created_at AS createdAt,
-        validation_status AS validationStatus,
-        validation_message AS validationMessage,
-        invitation_status AS invitationStatus,
-        invitation_sent_at AS invitationSentAt,
-        updated_at AS updatedAt
-      FROM registrations
-      ORDER BY datetime(created_at) DESC
-      LIMIT ?
-    `,
-    [limit],
-    (error, rows) => {
-      if (error) {
-        return res.status(500).json({
-          success: false,
-          message: "Could not fetch registrations",
-          error: error.message,
-        });
-      }
+  try {
+    const rows = await listRegistrations(limit);
+    const normalized = rows.map((row) => ({
+      id: row.id,
+      name: row.name,
+      email: row.email,
+      phone: row.phone,
+      college: row.college,
+      department: row.department,
+      year: row.year,
+      regId: row.regId,
+      createdAt: row.createdAt,
+      validationStatus: row.validationStatus,
+      validationMessage: row.validationMessage,
+      invitationStatus: row.invitationStatus,
+      invitationSentAt: row.invitationSentAt,
+      updatedAt: row.updatedAt,
+      events: Array.isArray(row.events)
+        ? row.events
+        : String(row.eventsText || "")
+            .split(",")
+            .map((entry) => entry.trim())
+            .filter(Boolean),
+    }));
 
-      const normalized = rows.map((row) => ({
-        ...row,
-        events: row.events ? row.events.split(",").filter(Boolean) : [],
-      }));
-
-      return res.json({ success: true, count: normalized.length, data: normalized });
-    }
-  );
+    return res.json({ success: true, count: normalized.length, data: normalized });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Could not fetch registrations",
+      error: error.message,
+    });
+  }
 });
 
 app.delete("/api/registrations/:id", requireAdminAuth, async (req, res) => {
@@ -509,7 +611,7 @@ app.delete("/api/registrations/:id", requireAdminAuth, async (req, res) => {
   }
 
   try {
-    const result = await runDb("DELETE FROM registrations WHERE id = ?", [registrationId]);
+    const result = await deleteRegistrationById(registrationId);
 
     if (!result.changes) {
       return res.status(404).json({
@@ -572,4 +674,14 @@ const startServer = (initialPort, retriesLeft = MAX_PORT_RETRIES) => {
   return server;
 };
 
-startServer(PORT);
+const bootstrap = async () => {
+  try {
+    await initDatabase();
+    startServer(PORT);
+  } catch (error) {
+    console.error("Failed to initialize database:", error.message);
+    process.exit(1);
+  }
+};
+
+bootstrap();

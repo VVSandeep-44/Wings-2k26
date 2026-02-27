@@ -1,7 +1,7 @@
 {
   "name": "wings-2k26",
   "version": "1.0.0",
-  "description": "WINGS 2k26 event website with backend API and SQLite database",
+  "description": "WINGS 2k26 event website with backend API and MongoDB database",
   "main": "server.js",
   "scripts": {
     "build:netlify": "node scripts/generate-config.js",
@@ -12,7 +12,7 @@
     "cors": "^2.8.5",
     "express": "^4.21.2",
     "libphonenumber-js": "^1.11.16",
-    "sqlite3": "^5.1.7",
+    "mongodb": "^6.16.0",
     "validator": "^13.12.0"
   }
 }
