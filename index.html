@@ -13,6 +13,9 @@
     <script src="config.js"></script>
   </head>
   <body>
+    <div id="serverWakeupBanner" class="server-wakeup-banner" role="status" aria-live="polite">
+      Server is waking up. Please wait a few seconds...
+    </div>
     <!-- Navigation -->
     <nav>
       <a href="#" class="logo"><i class="fas fa-feather-alt"></i> WINGS 2026</a>
@@ -296,6 +299,7 @@
       const navLinks = document.querySelector(".nav-links");
       const form = document.getElementById("registrationForm");
       const formStatus = document.getElementById("formStatus");
+      const serverWakeupBannerEl = document.getElementById("serverWakeupBanner");
       const regIdEl = document.getElementById("regId");
       const submitBtn = form.querySelector('button[type="submit"]');
       const qrLinkEl = document.getElementById("qrLink");
@@ -422,6 +426,10 @@
         submitBtn.textContent = isSubmitting
           ? "Loading..."
           : "Submit Registration";
+
+        if (serverWakeupBannerEl) {
+          serverWakeupBannerEl.classList.toggle("visible", isSubmitting);
+        }
       }
 
       function getSelectedEvents() {

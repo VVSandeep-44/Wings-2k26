@@ -115,6 +115,30 @@ nav.scrolled {
     box-shadow: 0 10px 26px rgba(0, 0, 0, 0.3);
 }
 
+.server-wakeup-banner {
+    position: fixed;
+    top: 70px;
+    left: 50%;
+    transform: translate(-50%, -10px);
+    background: rgba(17, 24, 39, 0.95);
+    color: #f9fafb;
+    border: 1px solid rgba(56, 249, 255, 0.45);
+    border-radius: 999px;
+    padding: 0.55rem 0.95rem;
+    font-size: 0.86rem;
+    font-weight: 700;
+    z-index: 1200;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.3);
+}
+
+.server-wakeup-banner.visible {
+    opacity: 1;
+    transform: translate(-50%, 0);
+}
+
 .logo {
     display: flex;
     align-items: center;
