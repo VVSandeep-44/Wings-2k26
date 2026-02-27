@@ -6,3 +6,4 @@
   from = "/*"
   to = "https://wings-2k26.onrender.com/:splat"
   status = 301
+  force = true
