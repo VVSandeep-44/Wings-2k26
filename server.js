@@ -4,6 +4,7 @@ const dns = require("dns").promises;
 const express = require("express");
 const cors = require("cors");
 const validator = require("validator");
+const { buildInvitationEmailHtml } = require("./templates/invitationEmailTemplate");
 const {
   initDatabase,
   createRegistration,
@@ -238,19 +239,14 @@ const sendInvitationEmail = async ({ name, email, regId, events }) => {
     };
   }
 
-  const eventsText = Array.isArray(events) ? events.join(", ") : String(events || "");
-
-  const htmlContent = `
-    <p>Hi <strong>${validator.escape(name)}</strong>,</p>
-    <p>Your registration for <strong>${EVENT_NAME}</strong> is confirmed.</p>
-    <p>
-      <strong>Registration ID:</strong> ${validator.escape(regId)}<br/>
-      <strong>Event Date:</strong> ${EVENT_DATE_TEXT}<br/>
-      <strong>Venue:</strong> ${EVENT_VENUE_TEXT}<br/>
-      <strong>Selected Events:</strong> ${validator.escape(eventsText)}
-    </p>
-    <p>We look forward to seeing you!</p>
-  `;
+  const htmlContent = buildInvitationEmailHtml({
+    name,
+    regId,
+    events,
+    eventName: EVENT_NAME,
+    eventDateText: EVENT_DATE_TEXT,
+    eventVenueText: EVENT_VENUE_TEXT,
+  });
 
   try {
     const response = await postJson(
