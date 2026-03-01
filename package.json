@@ -9,10 +9,13 @@
     "dev": "node server.js"
   },
   "dependencies": {
+    "@sentry/node": "^8.45.0",
     "cors": "^2.8.5",
+    "dotenv": "^16.6.1",
     "express": "^4.21.2",
     "libphonenumber-js": "^1.11.16",
     "mongodb": "^6.16.0",
+    "newrelic": "^12.20.0",
     "validator": "^13.12.0"
   }
 }

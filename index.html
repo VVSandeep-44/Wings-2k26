@@ -6,6 +6,10 @@
     <title>WINGS 2k26 - College Event</title>
     <link rel="stylesheet" href="style.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script
+      src="https://browser.sentry-cdn.com/8.33.0/bundle.min.js"
+      crossorigin="anonymous"
+    ></script>
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
@@ -305,7 +309,57 @@
       const qrLinkEl = document.getElementById("qrLink");
       const REGISTRATION_API_URL =
         window.WINGS_ENV?.REGISTRATION_API_URL || "/api/register";
+      const SENTRY_BROWSER_DSN = window.WINGS_ENV?.SENTRY_BROWSER_DSN || "";
+      const REGISTRATION_API_TIMEOUT_MS = 45000;
+      const API_BASE_URL = REGISTRATION_API_URL.replace(/\/api\/register\/?$/, "");
+      const API_HEALTH_URL = API_BASE_URL
+        ? `${API_BASE_URL}/api/health`
+        : "/api/health";
       const EVENT_START_DATE = "2026-03-13T09:00:00+05:30";
+      let serverWarmupPromise = null;
+      let warmupFromFormDone = false;
+
+      const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+      if (SENTRY_BROWSER_DSN && window.Sentry) {
+        window.Sentry.init({
+          dsn: SENTRY_BROWSER_DSN,
+          environment: window.location.hostname.includes("localhost")
+            ? "development"
+            : "production",
+          tracesSampleRate: 0.1,
+        });
+      }
+
+      async function warmUpServer() {
+        if (!API_HEALTH_URL) {
+          return;
+        }
+
+        if (serverWarmupPromise) {
+          return serverWarmupPromise;
+        }
+
+        serverWarmupPromise = (async () => {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 12000);
+
+          try {
+            await fetch(API_HEALTH_URL, {
+              method: "GET",
+              cache: "no-store",
+              signal: controller.signal,
+            });
+          } catch (_error) {
+            // best-effort warmup only
+          } finally {
+            clearTimeout(timeoutId);
+            serverWarmupPromise = null;
+          }
+        })();
+
+        return serverWarmupPromise;
+      }
 
       const updateNavState = () => {
         nav.classList.toggle("scrolled", window.scrollY > 20);
@@ -415,6 +469,16 @@
 
       updateCountdown();
       setInterval(updateCountdown, 1000);
+      warmUpServer();
+
+      form.addEventListener("focusin", () => {
+        if (warmupFromFormDone) {
+          return;
+        }
+
+        warmupFromFormDone = true;
+        warmUpServer();
+      });
 
       function setStatus(message, type) {
         formStatus.className = `form-status ${type}`;
@@ -454,25 +518,56 @@
           return { skipped: true };
         }
 
-        const response = await fetch(REGISTRATION_API_URL, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(payload),
-        });
-
-        const result = await response
-          .json()
-          .catch(() => ({ success: response.ok }));
-
-        if (!response.ok) {
-          throw new Error(
-            result.message || "Failed to submit registration to server.",
+        for (let attempt = 1; attempt <= 2; attempt += 1) {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(
+            () => controller.abort(),
+            REGISTRATION_API_TIMEOUT_MS,
           );
-        }
 
-        return result;
+          try {
+            const response = await fetch(REGISTRATION_API_URL, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(payload),
+              signal: controller.signal,
+            });
+
+            const result = await response
+              .json()
+              .catch(() => ({ success: response.ok }));
+
+            if (!response.ok) {
+              throw new Error(
+                result.message || "Failed to submit registration to server.",
+              );
+            }
+
+            return result;
+          } catch (error) {
+            const canRetry =
+              attempt === 1 &&
+              (error.name === "AbortError" || error.message === "Failed to fetch");
+
+            if (!canRetry) {
+              if (error.name === "AbortError") {
+                throw new Error(
+                  "Server is taking too long to respond. Please wait 10-20 seconds and submit again.",
+                );
+              }
+
+              throw error;
+            }
+
+            setStatus("Server is waking up... retrying automatically.", "");
+            await wait(3000);
+            await warmUpServer();
+          } finally {
+            clearTimeout(timeoutId);
+          }
+        }
       }
 
 
@@ -519,7 +614,7 @@
         };
 
         setSubmitting(true);
-        setStatus("Loading...", "");
+        setStatus("Waking server... please wait.", "");
 
         try {
           await submitRegistrationToApi(payload);

@@ -1,8 +1,28 @@
+require("dotenv").config();
+
+const NEW_RELIC_ENABLED =
+  String(process.env.NEW_RELIC_ENABLED || "true").toLowerCase() !== "false" &&
+  Boolean(process.env.NEW_RELIC_LICENSE_KEY);
+
+if (NEW_RELIC_ENABLED) {
+  process.env.NEW_RELIC_NO_CONFIG_FILE = process.env.NEW_RELIC_NO_CONFIG_FILE || "true";
+  process.env.NEW_RELIC_APP_NAME =
+    process.env.NEW_RELIC_APP_NAME || "WINGS 2k26 API";
+
+  try {
+    require("newrelic");
+    console.log("New Relic agent initialized.");
+  } catch (error) {
+    console.warn(`New Relic initialization skipped: ${error.message}`);
+  }
+}
+
 const path = require("path");
 const https = require("https");
 const dns = require("dns").promises;
 const express = require("express");
 const cors = require("cors");
+const Sentry = require("@sentry/node");
 const validator = require("validator");
 const { buildInvitationEmailHtml } = require("./templates/invitationEmailTemplate");
 const {
@@ -36,6 +56,39 @@ const CORS_ORIGINS = String(process.env.CORS_ORIGINS || "")
 const EVENT_NAME = "WINGS 2k26";
 const EVENT_DATE_TEXT = "March 13-14, 2026";
 const EVENT_VENUE_TEXT = "Pydah College of Engineering";
+const SENTRY_DSN = process.env.SENTRY_DSN || "";
+const SENTRY_ENVIRONMENT =
+  process.env.SENTRY_ENVIRONMENT || process.env.NODE_ENV || "development";
+const SENTRY_TRACES_SAMPLE_RATE = Number(
+  process.env.SENTRY_TRACES_SAMPLE_RATE || 0.1
+);
+const SENTRY_ENABLED = Boolean(SENTRY_DSN);
+
+if (SENTRY_ENABLED) {
+  Sentry.init({
+    dsn: SENTRY_DSN,
+    environment: SENTRY_ENVIRONMENT,
+    tracesSampleRate: Number.isFinite(SENTRY_TRACES_SAMPLE_RATE)
+      ? SENTRY_TRACES_SAMPLE_RATE
+      : 0.1,
+  });
+
+  console.log("Sentry initialized.");
+}
+
+const reportError = (error, context = {}) => {
+  if (!SENTRY_ENABLED || !error) {
+    return;
+  }
+
+  Sentry.withScope((scope) => {
+    Object.entries(context).forEach(([key, value]) => {
+      scope.setExtra(key, value);
+    });
+
+    Sentry.captureException(error);
+  });
+};
 
 const buildAdminCookie = (value, maxAge) => {
   const secureFlag = IS_PRODUCTION ? "; Secure" : "";
@@ -325,6 +378,12 @@ const runRegistrationValidationWorkflow = async ({
       updatedAt: new Date().toISOString(),
     });
   } catch (error) {
+    reportError(error, {
+      step: "runRegistrationValidationWorkflow",
+      registrationId: id,
+      email,
+    });
+
     await updateRegistrationById(id, {
       validationStatus: "failed",
       validationMessage: `Background verification failed: ${error.message}`,
@@ -395,6 +454,8 @@ app.get("/api/health/mail", async (_req, res) => {
       message: "Brevo configuration is valid",
     });
   } catch (error) {
+    reportError(error, { route: "/api/health/mail", method: "GET" });
+
     return res.status(502).json({
       status: "error",
       provider: "brevo",
@@ -520,6 +581,8 @@ app.post("/api/register", async (req, res) => {
         "Registration saved. Email and phone verification is running in background. Invitation mail will be sent after verification.",
     });
   } catch (error) {
+    reportError(error, { route: "/api/register", method: "POST" });
+
     if (error?.code === 11000) {
       return res.status(409).json({
         success: false,
@@ -565,6 +628,8 @@ app.get("/api/registrations", requireAdminAuth, async (req, res) => {
 
     return res.json({ success: true, count: normalized.length, data: normalized });
   } catch (error) {
+    reportError(error, { route: "/api/registrations", method: "GET" });
+
     return res.status(500).json({
       success: false,
       message: "Could not fetch registrations",
@@ -599,6 +664,12 @@ app.delete("/api/registrations/:id", requireAdminAuth, async (req, res) => {
       deletedId: registrationId,
     });
   } catch (error) {
+    reportError(error, {
+      route: "/api/registrations/:id",
+      method: "DELETE",
+      registrationId,
+    });
+
     return res.status(500).json({
       success: false,
       message: "Could not delete registration",
@@ -625,6 +696,22 @@ app.get("*", (_req, res) => {
   res.sendFile(path.join(__dirname, "index.html"));
 });
 
+app.use((error, req, res, _next) => {
+  reportError(error, {
+    route: req.originalUrl,
+    method: req.method,
+  });
+
+  if (res.headersSent) {
+    return;
+  }
+
+  return res.status(500).json({
+    success: false,
+    message: "Unexpected server error",
+  });
+});
+
 const startServer = (initialPort, retriesLeft = MAX_PORT_RETRIES) => {
   const server = app
     .listen(initialPort, () => {
@@ -640,6 +727,12 @@ const startServer = (initialPort, retriesLeft = MAX_PORT_RETRIES) => {
         return startServer(nextPort, retriesLeft - 1);
       }
 
+      reportError(error, {
+        phase: "startServer",
+        port: initialPort,
+        retriesLeft,
+      });
+
       console.error("Failed to start server:", error.message);
       process.exit(1);
     });
@@ -652,9 +745,21 @@ const bootstrap = async () => {
     await initDatabase();
     startServer(PORT);
   } catch (error) {
+    reportError(error, { phase: "bootstrap" });
     console.error("Failed to initialize database:", error.message);
     process.exit(1);
   }
 };
+
+process.on("unhandledRejection", (reason) => {
+  const error = reason instanceof Error ? reason : new Error(String(reason));
+  reportError(error, { phase: "unhandledRejection" });
+  console.error("Unhandled rejection:", error.message);
+});
+
+process.on("uncaughtException", (error) => {
+  reportError(error, { phase: "uncaughtException" });
+  console.error("Uncaught exception:", error.message);
+});
 
 bootstrap();
