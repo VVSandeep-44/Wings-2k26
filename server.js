@@ -36,8 +36,13 @@ const {
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
 const IS_PRODUCTION = process.env.NODE_ENV === "production";
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "WingsAdmin@2026";
-const ADMIN_SESSION_TOKEN = process.env.ADMIN_SESSION_TOKEN || "wings_secure_admin_session_token_2026";
+const ADMIN_PASSWORD = String(
+  process.env.ADMIN_PASSWORD || "WingsAdmin@2026"
+).trim();
+const ADMIN_PASSWORD_LEGACY = String(process.env.ADMIN_PASSWORD_LEGACY || "").trim();
+const ADMIN_SESSION_TOKEN = String(
+  process.env.ADMIN_SESSION_TOKEN || "wings_secure_admin_session_token_2026"
+).trim();
 const ADMIN_SESSION_COOKIE = "wings_admin_session";
 const MAX_PORT_RETRIES = 10;
 const TEMP_INVITE_FROM_EMAIL = "226t1a0544sandeep@pydah.edu.in";
@@ -217,11 +222,21 @@ const hasValidAdminSession = (req) => {
   return cookies[ADMIN_SESSION_COOKIE] === ADMIN_SESSION_TOKEN;
 };
 
+const isValidAdminPassword = (value) => {
+  const input = String(value || "").trim();
+
+  if (!input) {
+    return false;
+  }
+
+  return input === ADMIN_PASSWORD || (ADMIN_PASSWORD_LEGACY && input === ADMIN_PASSWORD_LEGACY);
+};
+
 const requireAdminAuth = (req, res, next) => {
   const providedPassword =
     req.headers["x-admin-password"] || req.query.password || "";
 
-  if (hasValidAdminSession(req) || providedPassword === ADMIN_PASSWORD) {
+  if (hasValidAdminSession(req) || isValidAdminPassword(providedPassword)) {
     return next();
   }
 
@@ -473,7 +488,7 @@ app.get("/api/health/mail", async (_req, res) => {
 app.post("/api/admin-login", (req, res) => {
   const password = String(req.body?.password || "").trim();
 
-  if (password !== ADMIN_PASSWORD) {
+  if (!isValidAdminPassword(password)) {
     return res.status(401).json({
       success: false,
       message: "Invalid admin password",
