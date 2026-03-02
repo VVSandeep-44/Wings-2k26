@@ -1,4 +1,4 @@
 window.WINGS_ENV = {
-  REGISTRATION_API_URL: "https://wings-2k26.onrender.com/api/register",
+  REGISTRATION_API_URL: "/api/register",
   SENTRY_BROWSER_DSN: ""
 };
