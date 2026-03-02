@@ -29,6 +29,7 @@ const {
   initDatabase,
   createRegistration,
   updateRegistrationById,
+  updateRegistrationByRegId,
   listRegistrations,
   deleteRegistrationById,
 } = require("./db");
@@ -360,13 +361,27 @@ const runRegistrationValidationWorkflow = async ({
   regId,
   events,
 }) => {
+  const syncRegistrationStatus = async (updates) => {
+    const byId = await updateRegistrationById(id, updates);
+
+    if (byId?.changes) {
+      return byId;
+    }
+
+    if (regId) {
+      return updateRegistrationByRegId(regId, updates);
+    }
+
+    return byId;
+  };
+
   try {
     const emailResult = await validateEmailInBackground(email);
 
     if (!emailResult.valid) {
       const reasons = [emailResult.reason].filter(Boolean).join("; ");
 
-      await updateRegistrationById(id, {
+      await syncRegistrationStatus({
         validationStatus: "failed",
         validationMessage: reasons,
         invitationStatus: "skipped",
@@ -376,7 +391,7 @@ const runRegistrationValidationWorkflow = async ({
       return;
     }
 
-    await updateRegistrationById(id, {
+    await syncRegistrationStatus({
       validationStatus: "verified",
       validationMessage: "Email verified",
       updatedAt: new Date().toISOString(),
@@ -384,7 +399,7 @@ const runRegistrationValidationWorkflow = async ({
 
     const invitation = await sendInvitationEmail({ name, email, regId, events });
 
-    await updateRegistrationById(id, {
+    await syncRegistrationStatus({
       invitationStatus: invitation.sent ? "sent" : "failed",
       invitationSentAt: invitation.sent ? new Date().toISOString() : null,
       validationMessage: invitation.sent
@@ -399,7 +414,7 @@ const runRegistrationValidationWorkflow = async ({
       email,
     });
 
-    await updateRegistrationById(id, {
+    await syncRegistrationStatus({
       validationStatus: "failed",
       validationMessage: `Background verification failed: ${error.message}`,
       invitationStatus: "failed",

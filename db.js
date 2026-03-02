@@ -146,6 +146,34 @@ const updateRegistrationById = async (id, updates) => {
   return { changes: updateResult.modifiedCount };
 };
 
+const updateRegistrationByRegId = async (regId, updates) => {
+  if (inMemoryMode) {
+    const normalizedRegId = String(regId || "").trim();
+    const index = inMemoryRegistrations.findIndex(
+      (entry) => entry.regId === normalizedRegId
+    );
+
+    if (index < 0) {
+      return { changes: 0 };
+    }
+
+    inMemoryRegistrations[index] = {
+      ...inMemoryRegistrations[index],
+      ...updates,
+    };
+
+    return { changes: 1 };
+  }
+
+  const collection = getRegistrationsCollection();
+  const updateResult = await collection.updateOne(
+    { regId: String(regId || "").trim() },
+    { $set: updates }
+  );
+
+  return { changes: updateResult.modifiedCount };
+};
+
 const listRegistrations = async (limit) => {
   if (inMemoryMode) {
     return inMemoryRegistrations.slice(0, Number(limit));
@@ -183,6 +211,7 @@ module.exports = {
   initDatabase,
   createRegistration,
   updateRegistrationById,
+  updateRegistrationByRegId,
   listRegistrations,
   deleteRegistrationById,
 };
