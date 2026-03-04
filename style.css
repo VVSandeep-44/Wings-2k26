@@ -1080,7 +1080,21 @@ footer i {
     }
 
     .countdown {
-        grid-template-columns: repeat(2, minmax(110px, 130px));
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        width: min(96vw, 520px);
+        gap: 0.45rem;
+    }
+
+    .countdown-item {
+        padding: 0.55rem 0.3rem;
+    }
+
+    .countdown-item span {
+        font-size: 1rem;
+    }
+
+    .countdown-item small {
+        font-size: 0.62rem;
     }
 
     .form-container {
@@ -1132,8 +1146,9 @@ footer i {
     }
 
     .countdown {
-        grid-template-columns: repeat(2, minmax(90px, 120px));
-        gap: 0.6rem;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        width: min(96vw, 520px);
+        gap: 0.4rem;
     }
 
     .social-links a {

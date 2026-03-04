@@ -6,10 +6,6 @@
     <title>WINGS 2k26 - College Event</title>
     <link rel="stylesheet" href="style.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <script
-      src="https://browser.sentry-cdn.com/8.33.0/bundle.min.js"
-      crossorigin="anonymous"
-    ></script>
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
@@ -321,15 +317,34 @@
 
       const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-      if (SENTRY_BROWSER_DSN && window.Sentry) {
-        window.Sentry.init({
-          dsn: SENTRY_BROWSER_DSN,
-          environment: window.location.hostname.includes("localhost")
-            ? "development"
-            : "production",
-          tracesSampleRate: 0.1,
-        });
-      }
+      const initBrowserSentry = () => {
+        if (!SENTRY_BROWSER_DSN) {
+          return;
+        }
+
+        const setup = () => {
+          if (!window.Sentry) {
+            return;
+          }
+
+          window.Sentry.init({
+            dsn: SENTRY_BROWSER_DSN,
+            environment: window.location.hostname.includes("localhost")
+              ? "development"
+              : "production",
+            tracesSampleRate: 0.1,
+          });
+        };
+
+        const script = document.createElement("script");
+        script.src = "https://browser.sentry-cdn.com/8.33.0/bundle.min.js";
+        script.crossOrigin = "anonymous";
+        script.onload = setup;
+        script.onerror = () => undefined;
+        document.head.appendChild(script);
+      };
+
+      initBrowserSentry();
 
       async function warmUpServer() {
         if (!API_HEALTH_URL) {
