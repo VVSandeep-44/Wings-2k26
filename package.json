@@ -4,9 +4,13 @@
   "description": "WINGS 2k26 event website with backend API and MongoDB database",
   "main": "server.js",
   "scripts": {
-    "build:netlify": "node scripts/generate-config.js",
+    "build:netlify": "npm install --prefix client && npm run build --prefix client",
     "start": "node server.js",
-    "dev": "node server.js"
+    "dev": "node server.js",
+    "client:install": "cd client && npm install",
+    "client:dev": "cd client && npm run dev",
+    "client:build": "cd client && npm run build",
+    "build": "npm run client:build"
   },
   "dependencies": {
     "@sentry/node": "^8.45.0",

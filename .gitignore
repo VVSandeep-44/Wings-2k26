@@ -3,3 +3,5 @@ data/
 *.db
 *.sqlite
 .env
+client/node_modules/
+client/dist/

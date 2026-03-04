@@ -204,7 +204,7 @@ app.use(
 );
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static(__dirname));
+app.use(express.static(path.join(__dirname, "client", "dist")));
 
 const parseCookies = (cookieHeader = "") => {
   return cookieHeader
@@ -570,9 +570,9 @@ app.post("/api/register", async (req, res) => {
   const eventsArray = Array.isArray(payload.events)
     ? payload.events
     : String(payload.events || "")
-        .split(",")
-        .map((entry) => entry.trim())
-        .filter(Boolean);
+      .split(",")
+      .map((entry) => entry.trim())
+      .filter(Boolean);
 
   try {
     const insertResult = await createRegistration({
@@ -651,9 +651,9 @@ app.get("/api/registrations", requireAdminAuth, async (req, res) => {
       events: Array.isArray(row.events)
         ? row.events
         : String(row.eventsText || "")
-            .split(",")
-            .map((entry) => entry.trim())
-            .filter(Boolean),
+          .split(",")
+          .map((entry) => entry.trim())
+          .filter(Boolean),
     }));
 
     return res.json({ success: true, count: normalized.length, data: normalized });
@@ -708,22 +708,8 @@ app.delete("/api/registrations/:id", requireAdminAuth, async (req, res) => {
   }
 });
 
-app.get("/admin", requireAdminSession, (_req, res) => {
-  res.set("Cache-Control", "no-store, no-cache, must-revalidate, private");
-  res.set("Pragma", "no-cache");
-  res.set("Expires", "0");
-  res.sendFile(path.join(__dirname, "admin.html"));
-});
-
-app.get("/admin-login", (_req, res) => {
-  res.set("Cache-Control", "no-store, no-cache, must-revalidate, private");
-  res.set("Pragma", "no-cache");
-  res.set("Expires", "0");
-  res.sendFile(path.join(__dirname, "admin-login.html"));
-});
-
 app.get("*", (_req, res) => {
-  res.sendFile(path.join(__dirname, "index.html"));
+  res.sendFile(path.join(__dirname, "client", "dist", "index.html"));
 });
 
 app.use((error, req, res, _next) => {
@@ -734,6 +720,13 @@ app.use((error, req, res, _next) => {
 
   if (res.headersSent) {
     return;
+  }
+
+  if (error?.message === "Origin not allowed by CORS") {
+    return res.status(403).json({
+      success: false,
+      message: "Origin is not allowed by CORS. Add your frontend URL to CORS_ORIGINS.",
+    });
   }
 
   return res.status(500).json({
