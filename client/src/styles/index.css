@@ -331,13 +331,36 @@ nav.scrolled {
 }
 
 .hero-title-image {
-    width: min(620px, 90vw);
-    max-height: 250px;
+    width: min(760px, 96vw);
+    max-height: 320px;
     object-fit: contain;
     display: inline-block;
     mix-blend-mode: screen;
     opacity: 0.96;
     filter: drop-shadow(0 0 14px rgba(56, 249, 255, 0.26)) drop-shadow(0 0 22px rgba(255, 45, 149, 0.2));
+}
+
+.hero-title-stack {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.hero-title-bottom {
+    display: inline-block;
+    font-size: clamp(0.92rem, 2.2vw, 1.18rem);
+    letter-spacing: 0.22rem;
+    font-weight: 800;
+    color: #ece8ff;
+    text-transform: uppercase;
+    padding: 0.28rem 0.68rem;
+    border-radius: 999px;
+    border: 1px solid rgba(56, 249, 255, 0.42);
+    background: linear-gradient(135deg, rgba(124, 77, 255, 0.22), rgba(255, 45, 149, 0.2));
+    text-shadow:
+        0 0 8px rgba(56, 249, 255, 0.28),
+        0 0 14px rgba(255, 45, 149, 0.2);
 }
 
 .hero-title-wrap {
@@ -441,6 +464,32 @@ nav.scrolled {
     transform: translateY(-3px);
     filter: brightness(1.04);
     box-shadow: 0 14px 30px rgba(233, 69, 96, 0.45);
+}
+
+.mid-sections-bg {
+    position: relative;
+    isolation: isolate;
+}
+
+.mid-sections-bg::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-image: url('/assets/jpg%20wings.jpeg');
+    background-position: center center;
+    background-repeat: no-repeat;
+    background-size: contain;
+    background-attachment: fixed;
+    opacity: 0.2;
+    filter: saturate(1.06) brightness(1.04);
+}
+
+.mid-sections-bg .about,
+.mid-sections-bg .registration,
+.mid-sections-bg .contact {
+    background: transparent;
 }
 
 @keyframes ctaBeatPulse {

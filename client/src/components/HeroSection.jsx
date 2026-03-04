@@ -34,7 +34,18 @@ export default function HeroSection() {
     return (
         <section className="hero" id="home">
             <div className="hero-content">
-                <h1>WINGS 2k26</h1>
+                <h1>
+                    <span className="hero-title-stack">
+                        <span className="hero-title-wrap">
+                            <img
+                                className="hero-title-image"
+                                src="/assets/logopng.png"
+                                alt="WINGS 2k26"
+                            />
+                        </span>
+                        <span className="hero-title-bottom">2026</span>
+                    </span>
+                </h1>
                 <p className="tagline">Spread Your Wings &amp; Fly High!</p>
 
                 <div className="event-details">

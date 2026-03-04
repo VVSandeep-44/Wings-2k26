@@ -37,9 +37,11 @@ export default function HomePage() {
         <>
             <Navbar />
             <HeroSection />
-            <AboutSection />
-            <RegistrationSection />
-            <ContactSection />
+            <div className="mid-sections-bg">
+                <AboutSection />
+                <RegistrationSection />
+                <ContactSection />
+            </div>
             <Footer />
         </>
     );
