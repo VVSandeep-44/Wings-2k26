@@ -33,7 +33,7 @@ const escapeCsv = (value) => {
 const buildCsv = (rows) => {
     const headers = [
         'Name', 'Email', 'Phone', 'College', 'Department', 'Year',
-        'Events', 'Registration ID', 'Validation Status', 'Invitation Status',
+        'Events', 'Registration ID', 'Participation Type', 'Team Name', 'Team Members', 'Payment Reference', 'Payment Status', 'Validation Status', 'Invitation Status',
         'Validation Message', 'Created At',
     ];
     const lines = [headers.join(',')];
@@ -43,6 +43,11 @@ const buildCsv = (rows) => {
                 escapeCsv(row.name), escapeCsv(row.email), escapeCsv(row.phone),
                 escapeCsv(row.college), escapeCsv(row.department), escapeCsv(row.year),
                 escapeCsv((row.events || []).join(' | ')), escapeCsv(row.regId),
+                escapeCsv(row.participationType || 'individual'),
+                escapeCsv(row.teamName || ''),
+                escapeCsv((row.teamMembers || []).join(' | ')),
+                escapeCsv(row.paymentReference || ''),
+                escapeCsv(row.paymentStatus || 'submitted'),
                 escapeCsv(row.validationStatus || 'pending'),
                 escapeCsv(row.invitationStatus || 'queued'),
                 escapeCsv(row.validationMessage || ''),
@@ -295,6 +300,8 @@ export default function AdminDashboardPage() {
                                     <th>Dept / Year</th>
                                     <th>Events</th>
                                     <th>Reg ID</th>
+                                    <th>Team</th>
+                                    <th>Payment</th>
                                     <th>Validation / Invite</th>
                                     <th>Created</th>
                                     <th>Actions</th>
@@ -303,7 +310,7 @@ export default function AdminDashboardPage() {
                             <tbody id="rows">
                                 {filteredRegistrations.length === 0 ? (
                                     <tr>
-                                        <td className="empty" colSpan="10">
+                                        <td className="empty" colSpan="12">
                                             {allRegistrations.length === 0
                                                 ? 'No data loaded'
                                                 : 'No registrations found'}
@@ -330,6 +337,19 @@ export default function AdminDashboardPage() {
                                                 ))}
                                             </td>
                                             <td data-label="Reg ID">{row.regId}</td>
+                                            <td data-label="Team">
+                                                <div className="meta">Type: {row.participationType || 'individual'}</div>
+                                                <div className="meta">Team: {row.teamName || '-'}</div>
+                                                <div className="meta">Members: {(row.teamMembers || []).join(', ') || '-'}</div>
+                                            </td>
+                                            <td data-label="Payment">
+                                                <div className="meta">Ref: {row.paymentReference || '-'}</div>
+                                                <div>
+                                                    <span className="badge">
+                                                        status: {escapeHtml(row.paymentStatus || 'submitted')}
+                                                    </span>
+                                                </div>
+                                            </td>
                                             <td data-label="Validation / Invite">
                                                 <div>
                                                     <span className="badge">

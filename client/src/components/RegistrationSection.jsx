@@ -3,17 +3,21 @@ import { QRCodeCanvas } from 'qrcode.react';
 import { submitRegistration, checkHealth } from '../services/api';
 
 const QR_URL = 'https://wings-2k26.onrender.com/#register';
+const PAYMENT_QR_VALUE =
+    import.meta.env.VITE_PAYMENT_QR_VALUE ||
+    'upi://pay?pa=303908985042716@cnrb&pn=Wings%202k26&am=300&cu=INR&tn=WINGS%202k26%20Registration';
+const REGISTRATION_FEE_TEXT = '₹300';
 
 const MAX_EVENTS = 2;
 
 const technicalEvents = [
-    { value: 'circuitry', label: 'Circuitry' },
-    { value: 'robotics', label: 'Robotics' },
-    { value: 'web-planting-ai', label: 'Web Planting with AI' },
-    { value: 'techno-quiz', label: 'Techno Quiz' },
-    { value: 'debugging', label: 'Debugging Events' },
-    { value: 'startup-pitching', label: 'Startup Idea Pitching' },
-    { value: 'paper-presentations', label: 'Paper Presentations (PPT)' },
+    { value: 'circuitry', label: 'Circuitry', description: 'Hands-on circuit design and troubleshooting challenge.' },
+    { value: 'robotics', label: 'Robotics', description: 'Build and control bots for task-based rounds.' },
+    { value: 'web-planting-ai', label: 'Web Planting with AI', description: 'Create smart web solutions using AI-powered workflows.' },
+    { value: 'techno-quiz', label: 'Techno Quiz', description: 'Fast-paced quiz on technology, science, and innovation.' },
+    { value: 'debugging', label: 'Debugging Events', description: 'Find and fix code issues within a limited time.' },
+    { value: 'startup-pitching', label: 'Startup Idea Pitching', description: 'Pitch your startup concept to a judging panel.' },
+    { value: 'paper-presentations', label: 'Paper Presentations (PPT)', description: 'Present your technical paper with impactful slides.' },
 ];
 
 const nonTechnicalEvents = [
@@ -47,6 +51,11 @@ export default function RegistrationSection() {
         college: '',
         department: '',
         year: '',
+        participationType: 'individual',
+        teamName: '',
+        teammate2: '',
+        teammate3: '',
+        paymentReference: '',
     });
     const [selectedEvents, setSelectedEvents] = useState([]);
     const [statusMessage, setStatusMessage] = useState('');
@@ -94,6 +103,30 @@ export default function RegistrationSection() {
             return;
         }
 
+        if (formData.participationType === 'team') {
+            if (!formData.teamName.trim()) {
+                setStatusMessage('Please enter a team name for team registration.');
+                setStatusType('error');
+                return;
+            }
+
+            const teammates = [formData.teammate2, formData.teammate3]
+                .map((member) => member.trim())
+                .filter(Boolean);
+
+            if (teammates.length === 0) {
+                setStatusMessage('For team registration, add at least one teammate (max 3 members total).');
+                setStatusType('error');
+                return;
+            }
+        }
+
+        if (!formData.paymentReference.trim()) {
+            setStatusMessage('Please complete payment and enter transaction/reference ID.');
+            setStatusType('error');
+            return;
+        }
+
         const newRegId =
             'WINGS2026-' + Math.random().toString(36).substring(2, 11).toUpperCase();
         setRegId(newRegId);
@@ -106,6 +139,15 @@ export default function RegistrationSection() {
             department: formData.department,
             year: formData.year,
             events: selectedEvents,
+            participationType: formData.participationType,
+            teamName: formData.participationType === 'team' ? formData.teamName.trim() : '',
+            teamMembers:
+                formData.participationType === 'team'
+                    ? [formData.name.trim(), formData.teammate2.trim(), formData.teammate3.trim()]
+                        .filter(Boolean)
+                        .slice(0, 3)
+                    : [formData.name.trim()],
+            paymentReference: formData.paymentReference.trim(),
             regId: newRegId,
             createdAt: new Date().toISOString(),
         };
@@ -132,7 +174,19 @@ export default function RegistrationSection() {
 
             setStatusMessage('Registration successful');
             setStatusType('success');
-            setFormData({ name: '', email: '', phone: '', college: '', department: '', year: '' });
+            setFormData({
+                name: '',
+                email: '',
+                phone: '',
+                college: '',
+                department: '',
+                year: '',
+                participationType: 'individual',
+                teamName: '',
+                teammate2: '',
+                teammate3: '',
+                paymentReference: '',
+            });
             setSelectedEvents([]);
         } catch (error) {
             setStatusMessage(error.message || 'Registration failed');
@@ -172,104 +226,106 @@ export default function RegistrationSection() {
                     {/* Registration Form */}
                     <div className="form-container">
                         <form id="registrationForm" onSubmit={handleSubmit} onFocus={handleFormFocus}>
-                            <div className="form-group">
-                                <label htmlFor="name">Full Name *</label>
-                                <input
-                                    type="text"
-                                    id="name"
-                                    name="name"
-                                    placeholder="Enter your full name"
-                                    required
-                                    value={formData.name}
-                                    onChange={handleInputChange}
-                                />
+                            <div className="form-grid">
+                                <div className="form-group">
+                                    <label htmlFor="name">Full Name *</label>
+                                    <input
+                                        type="text"
+                                        id="name"
+                                        name="name"
+                                        placeholder="Enter your full name"
+                                        required
+                                        value={formData.name}
+                                        onChange={handleInputChange}
+                                    />
+                                </div>
+
+                                <div className="form-group">
+                                    <label htmlFor="email">Email Address *</label>
+                                    <input
+                                        type="email"
+                                        id="email"
+                                        name="email"
+                                        placeholder="your.email@college.edu"
+                                        required
+                                        value={formData.email}
+                                        onChange={handleInputChange}
+                                    />
+                                </div>
+
+                                <div className="form-group">
+                                    <label htmlFor="phone">Phone Number *</label>
+                                    <input
+                                        type="tel"
+                                        id="phone"
+                                        name="phone"
+                                        placeholder="+91 98******10"
+                                        required
+                                        value={formData.phone}
+                                        onChange={handleInputChange}
+                                    />
+                                </div>
+
+                                <div className="form-group">
+                                    <label htmlFor="college">College Name *</label>
+                                    <input
+                                        type="text"
+                                        id="college"
+                                        name="college"
+                                        placeholder="Your College Name"
+                                        required
+                                        value={formData.college}
+                                        onChange={handleInputChange}
+                                    />
+                                </div>
+
+                                <div className="form-group">
+                                    <label htmlFor="department">Department *</label>
+                                    <select
+                                        id="department"
+                                        name="department"
+                                        required
+                                        value={formData.department}
+                                        onChange={handleInputChange}
+                                    >
+                                        {departments.map((dept) => (
+                                            <option key={dept.value} value={dept.value}>
+                                                {dept.label}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div className="form-group">
+                                    <label htmlFor="year">Year of Study *</label>
+                                    <select
+                                        id="year"
+                                        name="year"
+                                        required
+                                        value={formData.year}
+                                        onChange={handleInputChange}
+                                    >
+                                        {years.map((yr) => (
+                                            <option key={yr.value} value={yr.value}>
+                                                {yr.label}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
                             </div>
 
                             <div className="form-group">
-                                <label htmlFor="email">Email Address *</label>
-                                <input
-                                    type="email"
-                                    id="email"
-                                    name="email"
-                                    placeholder="your.email@college.edu"
-                                    required
-                                    value={formData.email}
-                                    onChange={handleInputChange}
-                                />
-                            </div>
-
-                            <div className="form-group">
-                                <label htmlFor="phone">Phone Number *</label>
-                                <input
-                                    type="tel"
-                                    id="phone"
-                                    name="phone"
-                                    placeholder="+91 98******10"
-                                    required
-                                    value={formData.phone}
-                                    onChange={handleInputChange}
-                                />
-                            </div>
-
-                            <div className="form-group">
-                                <label htmlFor="college">College Name *</label>
-                                <input
-                                    type="text"
-                                    id="college"
-                                    name="college"
-                                    placeholder="Your College Name"
-                                    required
-                                    value={formData.college}
-                                    onChange={handleInputChange}
-                                />
-                            </div>
-
-                            <div className="form-group">
-                                <label htmlFor="department">Department *</label>
-                                <select
-                                    id="department"
-                                    name="department"
-                                    required
-                                    value={formData.department}
-                                    onChange={handleInputChange}
-                                >
-                                    {departments.map((dept) => (
-                                        <option key={dept.value} value={dept.value}>
-                                            {dept.label}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div className="form-group">
-                                <label htmlFor="year">Year of Study *</label>
-                                <select
-                                    id="year"
-                                    name="year"
-                                    required
-                                    value={formData.year}
-                                    onChange={handleInputChange}
-                                >
-                                    {years.map((yr) => (
-                                        <option key={yr.value} value={yr.value}>
-                                            {yr.label}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div className="form-group">
-                                <label>
-                                    Events * <small style={{ fontWeight: 400, color: '#acb4df' }}>
+                                <label className="events-label">
+                                    Events * <small>
                                         (Choose up to {MAX_EVENTS} from any category — {selectedEvents.length}/{MAX_EVENTS} selected)
                                     </small>
                                 </label>
-                                <div className="checkbox-group" id="events" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                                    <div>
-                                        <p style={{ margin: '0 0 0.5rem', fontSize: '0.9rem', fontWeight: 700, color: '#ece6ff' }}>
+                                <div className="checkbox-group events-layout" id="events">
+                                    <div className="event-category">
+                                        <p className="event-category-title">
                                             <i className="fas fa-microchip"></i> Technical
                                         </p>
-                                        <div style={{ display: 'grid', gap: '0.45rem' }}>
+                                        <div className="event-list">
                                             {technicalEvents.map((evt) => (
                                                 <label className="event-option" key={evt.value}>
                                                     <input
@@ -280,16 +336,19 @@ export default function RegistrationSection() {
                                                         disabled={!selectedEvents.includes(evt.value) && selectedEvents.length >= MAX_EVENTS}
                                                         onChange={() => handleEventToggle(evt.value)}
                                                     />
-                                                    <span>{evt.label}</span>
+                                                    <span>
+                                                        <strong>{evt.label}</strong>
+                                                        {evt.description ? <small>{evt.description}</small> : null}
+                                                    </span>
                                                 </label>
                                             ))}
                                         </div>
                                     </div>
-                                    <div>
-                                        <p style={{ margin: '0 0 0.5rem', fontSize: '0.9rem', fontWeight: 700, color: '#ece6ff' }}>
+                                    <div className="event-category">
+                                        <p className="event-category-title">
                                             <i className="fas fa-palette"></i> Non-Technical
                                         </p>
-                                        <div style={{ display: 'grid', gap: '0.45rem' }}>
+                                        <div className="event-list">
                                             {nonTechnicalEvents.map((evt) => (
                                                 <label className="event-option" key={evt.value}>
                                                     <input
@@ -300,12 +359,89 @@ export default function RegistrationSection() {
                                                         disabled={!selectedEvents.includes(evt.value) && selectedEvents.length >= MAX_EVENTS}
                                                         onChange={() => handleEventToggle(evt.value)}
                                                     />
-                                                    <span>{evt.label}</span>
+                                                    <span>
+                                                        <strong>{evt.label}</strong>
+                                                        {evt.description ? <small>{evt.description}</small> : null}
+                                                    </span>
                                                 </label>
                                             ))}
                                         </div>
                                     </div>
                                 </div>
+                            </div>
+
+                            <div className="form-group team-section">
+                                <label htmlFor="participationType">Participation Type *</label>
+                                <select
+                                    id="participationType"
+                                    name="participationType"
+                                    required
+                                    value={formData.participationType}
+                                    onChange={handleInputChange}
+                                >
+                                    <option value="individual">Individual</option>
+                                    <option value="team">Team (max 3 members)</option>
+                                </select>
+
+                                {formData.participationType === 'team' ? (
+                                    <div className="team-fields">
+                                        <input
+                                            type="text"
+                                            id="teamName"
+                                            name="teamName"
+                                            placeholder="Team name"
+                                            required
+                                            value={formData.teamName}
+                                            onChange={handleInputChange}
+                                        />
+                                        <input
+                                            type="text"
+                                            id="teammate2"
+                                            name="teammate2"
+                                            placeholder="Teammate 2 name *"
+                                            required
+                                            value={formData.teammate2}
+                                            onChange={handleInputChange}
+                                        />
+                                        <input
+                                            type="text"
+                                            id="teammate3"
+                                            name="teammate3"
+                                            placeholder="Teammate 3 name (optional)"
+                                            value={formData.teammate3}
+                                            onChange={handleInputChange}
+                                        />
+                                        <small className="team-help">
+                                            Team can have up to 3 members including you.
+                                        </small>
+                                    </div>
+                                ) : null}
+                            </div>
+
+                            <div className="form-group payment-group">
+                                <label>Payment *</label>
+                                <div className="payment-qr-box">
+                                    <p className="payment-amount">Registration Fee: {REGISTRATION_FEE_TEXT}</p>
+                                    <p className="payment-note">Scan the QR and complete payment before submitting.</p>
+                                    <div className="payment-qr">
+                                        <QRCodeCanvas
+                                            value={PAYMENT_QR_VALUE}
+                                            size={170}
+                                            bgColor="#ffffff"
+                                            fgColor="#000000"
+                                            level="H"
+                                        />
+                                    </div>
+                                </div>
+                                <input
+                                    type="text"
+                                    id="paymentReference"
+                                    name="paymentReference"
+                                    placeholder="Enter UPI transaction/reference ID"
+                                    required
+                                    value={formData.paymentReference}
+                                    onChange={handleInputChange}
+                                />
                             </div>
 
                             <button type="submit" className="submit-btn" disabled={isSubmitting}>

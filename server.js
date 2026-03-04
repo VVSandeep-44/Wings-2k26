@@ -272,6 +272,8 @@ const requiredFields = [
   "department",
   "year",
   "events",
+  "participationType",
+  "paymentReference",
   "regId",
   "createdAt",
 ];
@@ -563,6 +565,41 @@ app.post("/api/register", async (req, res) => {
     return res.status(400).json({ success: false, message: "Invalid email address" });
   }
 
+  const participationType = String(payload.participationType || "individual")
+    .trim()
+    .toLowerCase();
+  const teamName = String(payload.teamName || "").trim();
+  const submittedTeamMembers = Array.isArray(payload.teamMembers)
+    ? payload.teamMembers
+    : [];
+  const teamMembers = submittedTeamMembers
+    .map((member) => String(member || "").trim())
+    .filter(Boolean)
+    .slice(0, 3);
+
+  if (!["individual", "team"].includes(participationType)) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid participation type",
+    });
+  }
+
+  if (participationType === "team") {
+    if (!teamName) {
+      return res.status(400).json({
+        success: false,
+        message: "Team name is required for team registration",
+      });
+    }
+
+    if (teamMembers.length < 2) {
+      return res.status(400).json({
+        success: false,
+        message: "Team registration requires at least 2 members and allows up to 3",
+      });
+    }
+  }
+
   const timestamp = new Date().toISOString();
 
   const eventsAsString = Array.isArray(payload.events)
@@ -586,6 +623,14 @@ app.post("/api/register", async (req, res) => {
       year: String(payload.year).trim(),
       events: eventsArray,
       eventsText: eventsAsString,
+      participationType,
+      teamName: participationType === "team" ? teamName : "",
+      teamMembers:
+        participationType === "team"
+          ? teamMembers
+          : [String(payload.name).trim()],
+      paymentReference: String(payload.paymentReference).trim(),
+      paymentStatus: "submitted",
       regId: String(payload.regId).trim(),
       createdAt: String(payload.createdAt).trim(),
       validationStatus: "pending",
@@ -643,7 +688,12 @@ app.get("/api/registrations", requireAdminAuth, async (req, res) => {
       college: row.college,
       department: row.department,
       year: row.year,
+      participationType: row.participationType,
+      teamName: row.teamName,
+      teamMembers: Array.isArray(row.teamMembers) ? row.teamMembers : [],
       regId: row.regId,
+      paymentReference: row.paymentReference,
+      paymentStatus: row.paymentStatus,
       createdAt: row.createdAt,
       validationStatus: row.validationStatus,
       validationMessage: row.validationMessage,
