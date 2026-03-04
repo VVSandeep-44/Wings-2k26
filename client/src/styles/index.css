@@ -805,8 +805,13 @@ nav.scrolled {
 
 .team-fields {
     display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.55rem;
     margin-top: 0.55rem;
+}
+
+.team-fields .team-help {
+    grid-column: 1 / -1;
 }
 
 .team-help {
@@ -1124,7 +1129,7 @@ footer i {
     }
 
     .form-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
 
@@ -1227,12 +1232,12 @@ footer i {
     }
 
     .checkbox-group {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, minmax(130px, 1fr));
         padding: 0.7rem;
     }
 
     .events-layout {
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr 1fr;
         gap: 0.8rem;
     }
 
@@ -1247,6 +1252,51 @@ footer i {
 
     .qr-container p {
         font-size: 0.9rem;
+    }
+}
+
+@media (max-width: 560px) {
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .team-fields {
+        grid-template-columns: 1fr;
+    }
+
+    .checkbox-group {
+        grid-template-columns: 1fr;
+    }
+
+    .events-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .event-category {
+        padding: 0.55rem;
+    }
+
+    .event-category-title {
+        margin-bottom: 0.4rem;
+        font-size: 0.84rem;
+    }
+
+    .event-list {
+        gap: 0.35rem;
+    }
+
+    .event-option span {
+        padding: 0.62rem 0.7rem;
+        border-radius: 9px;
+    }
+
+    .event-option span strong {
+        font-size: 0.86rem;
+    }
+
+    .event-option span small {
+        font-size: 0.7rem;
+        line-height: 1.3;
     }
 }
 
