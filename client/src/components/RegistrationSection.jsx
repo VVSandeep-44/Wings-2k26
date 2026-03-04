@@ -11,19 +11,19 @@ const REGISTRATION_FEE_TEXT = '₹300';
 const MAX_EVENTS = 2;
 
 const technicalEvents = [
-    { value: 'circuitry', label: 'Circuitry', description: 'Hands-on circuit design and troubleshooting challenge.' },
-    { value: 'robotics', label: 'Robotics', description: 'Build and control bots for task-based rounds.' },
-    { value: 'web-planting-ai', label: 'Web Planting with AI', description: 'Create smart web solutions using AI-powered workflows.' },
-    { value: 'techno-quiz', label: 'Techno Quiz', description: 'Fast-paced quiz on technology, science, and innovation.' },
-    { value: 'debugging', label: 'Debugging Events', description: 'Find and fix code issues within a limited time.' },
-    { value: 'startup-pitching', label: 'Startup Idea Pitching', description: 'Pitch your startup concept to a judging panel.' },
-    { value: 'paper-presentations', label: 'Paper Presentations (PPT)', description: 'Present your technical paper with impactful slides.' },
+    { value: 'circuitry', label: 'Circuitry', description: 'Design and troubleshoot practical circuits.' },
+    { value: 'robotics', label: 'Robotics', description: 'Build and control bots in task rounds.' },
+    { value: 'web-planting-ai', label: 'Web Planting with AI', description: 'Create web solutions with AI workflows.' },
+    { value: 'techno-quiz', label: 'Techno Quiz', description: 'Quick quiz on tech and innovation.' },
+    { value: 'debugging', label: 'Debugging Events', description: 'Find and fix code issues under time limits.' },
+    { value: 'startup-pitching', label: 'Startup Idea Pitching', description: 'Pitch startup ideas to judges.' },
+    { value: 'paper-presentations', label: 'Paper Presentations (PPT)', description: 'Present technical ideas with PPT.' },
 ];
 
 const nonTechnicalEvents = [
-    { value: 'short-film', label: 'Short Film Making' },
-    { value: 'standup-comedy', label: 'Standup Comedy' },
-    { value: 'ad-making', label: 'Ad Making' },
+    { value: 'short-film', label: 'Short Film Making', description: 'Create and present a short story film.' },
+    { value: 'standup-comedy', label: 'Standup Comedy', description: 'Perform original comedy live on stage.' },
+    { value: 'ad-making', label: 'Ad Making', description: 'Build and pitch a creative ad concept.' },
 ];
 
 const departments = [
@@ -74,9 +74,13 @@ export default function RegistrationSection() {
     const handleEventToggle = (eventValue) => {
         setSelectedEvents((prev) => {
             if (prev.includes(eventValue)) {
-                return prev.filter((e) => e !== eventValue);
+                return prev.filter((event) => event !== eventValue);
             }
-            if (prev.length >= MAX_EVENTS) return prev;
+
+            if (prev.length >= MAX_EVENTS) {
+                return prev;
+            }
+
             return [...prev, eventValue];
         });
     };
@@ -314,61 +318,66 @@ export default function RegistrationSection() {
                                 </div>
                             </div>
 
-                            <div className="form-group">
-                                <label className="events-label">
-                                    Events * <small>
-                                        (Choose up to {MAX_EVENTS} from any category — {selectedEvents.length}/{MAX_EVENTS} selected)
-                                    </small>
-                                </label>
-                                <div className="checkbox-group events-layout" id="events">
-                                    <div className="event-category">
-                                        <p className="event-category-title">
-                                            <i className="fas fa-microchip"></i> Technical
-                                        </p>
-                                        <div className="event-list">
-                                            {technicalEvents.map((evt) => (
-                                                <label className="event-option" key={evt.value}>
-                                                    <input
-                                                        type="checkbox"
-                                                        name="events"
-                                                        value={evt.value}
-                                                        checked={selectedEvents.includes(evt.value)}
-                                                        disabled={!selectedEvents.includes(evt.value) && selectedEvents.length >= MAX_EVENTS}
-                                                        onChange={() => handleEventToggle(evt.value)}
-                                                    />
-                                                    <span>
-                                                        <strong>{evt.label}</strong>
-                                                        {evt.description ? <small>{evt.description}</small> : null}
-                                                    </span>
-                                                </label>
-                                            ))}
-                                        </div>
-                                    </div>
-                                    <div className="event-category">
-                                        <p className="event-category-title">
-                                            <i className="fas fa-palette"></i> Non-Technical
-                                        </p>
-                                        <div className="event-list">
-                                            {nonTechnicalEvents.map((evt) => (
-                                                <label className="event-option" key={evt.value}>
-                                                    <input
-                                                        type="checkbox"
-                                                        name="events"
-                                                        value={evt.value}
-                                                        checked={selectedEvents.includes(evt.value)}
-                                                        disabled={!selectedEvents.includes(evt.value) && selectedEvents.length >= MAX_EVENTS}
-                                                        onChange={() => handleEventToggle(evt.value)}
-                                                    />
-                                                    <span>
-                                                        <strong>{evt.label}</strong>
-                                                        {evt.description ? <small>{evt.description}</small> : null}
-                                                    </span>
-                                                </label>
-                                            ))}
-                                        </div>
+                            <details className="mobile-accordion events-accordion" open>
+                                <summary>
+                                    Events * ({selectedEvents.length}/{MAX_EVENTS})
+                                </summary>
+                                <div className="accordion-content form-group">
+                                    <label className="events-label">
+                                        Events * <small>
+                                            (Choose up to {MAX_EVENTS} from any category — {selectedEvents.length}/{MAX_EVENTS} selected)
+                                        </small>
+                                    </label>
+                                    <div className="checkbox-group events-layout" id="events">
+                                        <details className="event-category event-category-collapse">
+                                            <summary className="event-category-title">
+                                                <span><i className="fas fa-microchip"></i> Technical</span>
+                                            </summary>
+                                            <div className="event-list">
+                                                {technicalEvents.map((evt) => (
+                                                    <label className="event-option" key={evt.value}>
+                                                        <input
+                                                            type="checkbox"
+                                                            name="events"
+                                                            value={evt.value}
+                                                            checked={selectedEvents.includes(evt.value)}
+                                                            disabled={!selectedEvents.includes(evt.value) && selectedEvents.length >= MAX_EVENTS}
+                                                            onChange={() => handleEventToggle(evt.value)}
+                                                        />
+                                                        <span>
+                                                            <strong>{evt.label}</strong>
+                                                            {evt.description ? <small>{evt.description}</small> : null}
+                                                        </span>
+                                                    </label>
+                                                ))}
+                                            </div>
+                                        </details>
+                                        <details className="event-category event-category-collapse">
+                                            <summary className="event-category-title">
+                                                <span><i className="fas fa-palette"></i> Non-Technical</span>
+                                            </summary>
+                                            <div className="event-list">
+                                                {nonTechnicalEvents.map((evt) => (
+                                                    <label className="event-option" key={evt.value}>
+                                                        <input
+                                                            type="checkbox"
+                                                            name="events"
+                                                            value={evt.value}
+                                                            checked={selectedEvents.includes(evt.value)}
+                                                            disabled={!selectedEvents.includes(evt.value) && selectedEvents.length >= MAX_EVENTS}
+                                                            onChange={() => handleEventToggle(evt.value)}
+                                                        />
+                                                        <span>
+                                                            <strong>{evt.label}</strong>
+                                                            {evt.description ? <small>{evt.description}</small> : null}
+                                                        </span>
+                                                    </label>
+                                                ))}
+                                            </div>
+                                        </details>
                                     </div>
                                 </div>
-                            </div>
+                            </details>
 
                             <div className="form-group team-section">
                                 <label htmlFor="participationType">Participation Type *</label>
@@ -418,31 +427,36 @@ export default function RegistrationSection() {
                                 ) : null}
                             </div>
 
-                            <div className="form-group payment-group">
-                                <label>Payment *</label>
-                                <div className="payment-qr-box">
-                                    <p className="payment-amount">Registration Fee: {REGISTRATION_FEE_TEXT}</p>
-                                    <p className="payment-note">Scan the QR and complete payment before submitting.</p>
-                                    <div className="payment-qr">
-                                        <QRCodeCanvas
-                                            value={PAYMENT_QR_VALUE}
-                                            size={170}
-                                            bgColor="#ffffff"
-                                            fgColor="#000000"
-                                            level="H"
-                                        />
+                            <details className="mobile-accordion payment-accordion" open>
+                                <summary>
+                                    Payment * ({REGISTRATION_FEE_TEXT})
+                                </summary>
+                                <div className="accordion-content form-group payment-group">
+                                    <label>Payment *</label>
+                                    <div className="payment-qr-box">
+                                        <p className="payment-amount">Registration Fee: {REGISTRATION_FEE_TEXT}</p>
+                                        <p className="payment-note">Scan the QR and complete payment before submitting.</p>
+                                        <div className="payment-qr">
+                                            <QRCodeCanvas
+                                                value={PAYMENT_QR_VALUE}
+                                                size={170}
+                                                bgColor="#ffffff"
+                                                fgColor="#000000"
+                                                level="H"
+                                            />
+                                        </div>
                                     </div>
+                                    <input
+                                        type="text"
+                                        id="paymentReference"
+                                        name="paymentReference"
+                                        placeholder="Enter UPI transaction/reference ID"
+                                        required
+                                        value={formData.paymentReference}
+                                        onChange={handleInputChange}
+                                    />
                                 </div>
-                                <input
-                                    type="text"
-                                    id="paymentReference"
-                                    name="paymentReference"
-                                    placeholder="Enter UPI transaction/reference ID"
-                                    required
-                                    value={formData.paymentReference}
-                                    onChange={handleInputChange}
-                                />
-                            </div>
+                            </details>
 
                             <button type="submit" className="submit-btn" disabled={isSubmitting}>
                                 {isSubmitting ? 'Loading...' : 'Submit Registration'}

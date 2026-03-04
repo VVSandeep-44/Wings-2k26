@@ -330,6 +330,27 @@ nav.scrolled {
         0 8px 24px rgba(0, 0, 0, 0.35);
 }
 
+.hero-title-image {
+    width: min(620px, 90vw);
+    max-height: 250px;
+    object-fit: contain;
+    display: inline-block;
+    mix-blend-mode: screen;
+    opacity: 0.96;
+    filter: drop-shadow(0 0 14px rgba(56, 249, 255, 0.26)) drop-shadow(0 0 22px rgba(255, 45, 149, 0.2));
+}
+
+.hero-title-wrap {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border-radius: 0;
+    background: transparent;
+    border: 0;
+    backdrop-filter: none;
+}
+
 .hero .tagline {
     font-size: clamp(1.15rem, 3vw, 1.8rem);
     color: #ddd5ff;
@@ -696,16 +717,28 @@ nav.scrolled {
     color: #acb4df;
 }
 
+.mobile-accordion {
+    border: 0;
+}
+
+.mobile-accordion > summary {
+    display: none;
+}
+
+.accordion-content {
+    display: grid;
+}
+
 .events-layout {
     grid-template-columns: 1fr 1fr;
-    gap: 1rem;
+    gap: 0.7rem;
 }
 
 .event-category {
     background: rgba(14, 19, 43, 0.55);
     border: 1px solid #2f3660;
     border-radius: 10px;
-    padding: 0.65rem;
+    padding: 0.55rem;
 }
 
 .event-category-title {
@@ -715,9 +748,41 @@ nav.scrolled {
     color: #ece6ff;
 }
 
+.event-category-collapse {
+    overflow: hidden;
+}
+
+.event-category-collapse .event-category-title {
+    margin: 0;
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.event-category-collapse .event-category-title::-webkit-details-marker {
+    display: none;
+}
+
+.event-category-collapse .event-category-title::after {
+    content: '+';
+    color: #cdd4f4;
+    font-size: 1rem;
+    line-height: 1;
+}
+
+.event-category-collapse[open] .event-category-title::after {
+    content: '−';
+}
+
+.event-category-collapse .event-list {
+    margin-top: 0.5rem;
+}
+
 .event-list {
     display: grid;
-    gap: 0.45rem;
+    gap: 0.35rem;
 }
 
 .event-option {
@@ -1100,8 +1165,7 @@ footer i {
     }
 
     .qr-container {
-        position: static;
-        width: 100%;
+        display: none;
     }
 
     .form-container,
@@ -1218,7 +1282,7 @@ footer i {
     }
 
     .form-container {
-        padding: 1.15rem;
+        padding: 0.95rem;
     }
 
     .form-group input,
@@ -1246,12 +1310,77 @@ footer i {
         padding: 0.78rem 0.85rem;
     }
 
-    .qr-container {
-        padding: 1.25rem 1rem;
+    .team-section,
+    .payment-group {
+        padding: 0.65rem;
     }
 
-    .qr-container p {
+    .payment-qr-box {
+        gap: 0.4rem;
+        padding: 0.5rem;
+    }
+
+    .payment-amount {
+        font-size: 0.86rem;
+    }
+
+    .payment-note {
+        font-size: 0.74rem;
+    }
+
+    .mobile-accordion {
+        border: 1px solid #2f3660;
+        border-radius: 12px;
+        background: rgba(14, 19, 43, 0.45);
+        overflow: hidden;
+    }
+
+    .mobile-accordion > summary {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        list-style: none;
+        cursor: pointer;
+        padding: 0.75rem 0.8rem;
         font-size: 0.9rem;
+        font-weight: 700;
+        color: #ece6ff;
+        user-select: none;
+    }
+
+    .mobile-accordion > summary::-webkit-details-marker {
+        display: none;
+    }
+
+    .mobile-accordion > summary::after {
+        content: '+';
+        color: #cdd4f4;
+        font-size: 1rem;
+        line-height: 1;
+    }
+
+    .mobile-accordion[open] > summary::after {
+        content: '−';
+    }
+
+    .mobile-accordion .accordion-content {
+        display: none;
+        padding: 0 0.55rem 0.55rem;
+    }
+
+    .mobile-accordion[open] .accordion-content {
+        display: grid;
+    }
+
+    .events-accordion .checkbox-group,
+    .events-accordion .events-layout {
+        margin-top: 0.2rem;
+    }
+
+    .payment-accordion .payment-group {
+        border: 0;
+        background: transparent;
+        padding: 0;
     }
 }
 
@@ -1295,8 +1424,13 @@ footer i {
     }
 
     .event-option span small {
-        font-size: 0.7rem;
-        line-height: 1.3;
+        display: none;
+    }
+
+    .payment-qr canvas,
+    .payment-qr img {
+        width: 130px !important;
+        height: 130px !important;
     }
 }
 
