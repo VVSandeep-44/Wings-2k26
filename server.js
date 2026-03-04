@@ -729,6 +729,13 @@ app.use((error, req, res, _next) => {
     });
   }
 
+  if (!IS_PRODUCTION) {
+    return res.status(500).json({
+      success: false,
+      message: error?.message || "Unexpected server error",
+    });
+  }
+
   return res.status(500).json({
     success: false,
     message: "Unexpected server error",
