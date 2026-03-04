@@ -79,7 +79,7 @@ export const submitRegistration = async (payload, onRetryStatus) => {
 export const checkAdminSession = async () => {
     const response = await fetch(buildApiUrl('/api/admin-session'), {
         method: 'GET',
-        credentials: 'same-origin',
+        credentials: 'include',
         cache: 'no-store',
     });
     return response.ok;
@@ -89,7 +89,7 @@ export const adminLogin = async (password) => {
     const response = await fetch(buildApiUrl('/api/admin-login'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'same-origin',
+        credentials: 'include',
         body: JSON.stringify({ password }),
     });
 
@@ -105,14 +105,14 @@ export const adminLogin = async (password) => {
 export const adminLogout = async () => {
     await fetch(buildApiUrl('/api/admin-logout'), {
         method: 'POST',
-        credentials: 'same-origin',
+        credentials: 'include',
         cache: 'no-store',
     });
 };
 
 export const fetchRegistrations = async (limit = 20) => {
     const response = await fetch(buildApiUrl(`/api/registrations?limit=${limit}`), {
-        credentials: 'same-origin',
+        credentials: 'include',
         cache: 'no-store',
     });
 
@@ -128,7 +128,7 @@ export const fetchRegistrations = async (limit = 20) => {
 export const deleteRegistration = async (id) => {
     const response = await fetch(buildApiUrl(`/api/registrations/${id}`), {
         method: 'DELETE',
-        credentials: 'same-origin',
+        credentials: 'include',
         cache: 'no-store',
     });
 

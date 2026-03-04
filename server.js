@@ -98,9 +98,10 @@ const reportError = (error, context = {}) => {
 
 const buildAdminCookie = (value, maxAge) => {
   const secureFlag = IS_PRODUCTION ? "; Secure" : "";
+  const sameSite = IS_PRODUCTION ? "None" : "Strict";
   return `${ADMIN_SESSION_COOKIE}=${encodeURIComponent(
     value
-  )}; Path=/; HttpOnly; SameSite=Strict${secureFlag}; Max-Age=${maxAge}`;
+  )}; Path=/; HttpOnly; SameSite=${sameSite}${secureFlag}; Max-Age=${maxAge}`;
 };
 
 if (!process.env.ADMIN_PASSWORD) {
@@ -199,6 +200,7 @@ app.use(
       return callback(new Error("Origin not allowed by CORS"));
     },
     methods: ["GET", "POST", "DELETE", "OPTIONS"],
+    credentials: true,
     allowedHeaders: ["Content-Type", "x-admin-password"],
   })
 );
