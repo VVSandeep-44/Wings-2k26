@@ -6,11 +6,16 @@ export default function ContactSection() {
                 <div className="contact-info">
                     <div className="contact-item">
                         <i className="fas fa-envelope"></i>
-                        <p>princengg@pydah.edu.in</p>
+                        <p>wings2k26@pydah.edu.in</p>
                     </div>
                     <div className="contact-item">
                         <i className="fas fa-phone"></i>
-                        <p>+91 73824 56539</p>
+                        <p>
+                            Student Coordinators:<br />
+                            P. SAI TEJA (Pharmacy) - <a href="tel:+918463906115">8463906115</a><br />
+                            Y. DORA (Degree) - <a href="tel:+919618172575">9618172575</a><br />
+                            L. GANESH (Engineering) - <a href="tel:+919059245680">9059245680</a>
+                        </p>
                     </div>
                     <div className="contact-item">
                         <i className="fas fa-map-pin"></i>
