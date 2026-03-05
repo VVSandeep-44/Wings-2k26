@@ -40,9 +40,10 @@ export default function HeroSection() {
                 muted
                 playsInline
                 preload="metadata"
+                poster="/assets/jpg wings.jpeg"
                 aria-hidden="true"
             >
-                <source src="/assets/herobg.mp4" type="video/mp4" />
+                <source src="/assets/herobg.optimized.mp4" type="video/mp4" />
             </video>
             <div className="hero-content">
                 <h1>
@@ -52,6 +53,11 @@ export default function HeroSection() {
                                 className="hero-title-image"
                                 src="/assets/Wingslogo.png"
                                 alt="WINGS 2k26"
+                                loading="eager"
+                                fetchPriority="high"
+                                decoding="async"
+                                width="900"
+                                height="390"
                             />
                         </span>
                         <span className="hero-title-bottom">2026</span>
