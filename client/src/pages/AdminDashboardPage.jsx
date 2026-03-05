@@ -193,6 +193,22 @@ const buildSingleRegistrationResponseJson = (row) =>
         2
     );
 
+const getAbstractPdfEntries = (row) => {
+    const details = row?.eventDetails && typeof row.eventDetails === 'object'
+        ? row.eventDetails
+        : {};
+
+    return Object.entries(details)
+        .map(([eventKey, eventDetail]) => ({
+            eventKey,
+            fileName: eventDetail?.abstractPdfName || `${eventKey}-abstract.pdf`,
+            dataUrl: eventDetail?.abstractPdfDataUrl || '',
+        }))
+        .filter((entry) => entry.dataUrl && entry.dataUrl.startsWith('data:application/pdf;base64,'));
+};
+
+    const hasAbstractPdfs = (row) => getAbstractPdfEntries(row).length > 0;
+
 const downloadFile = (content, filename, mimeType) => {
     const blob = new Blob([content], { type: mimeType });
     const url = URL.createObjectURL(blob);
@@ -421,6 +437,28 @@ export default function AdminDashboardPage() {
         setStatus('Selected registration response downloaded.', 'ok');
     };
 
+    const handleDownloadAllAbstractPdfs = (row) => {
+        const entries = getAbstractPdfEntries(row);
+
+        if (entries.length === 0) {
+            setStatus('No abstract PDFs are available for this registrant.', 'err');
+            return;
+        }
+
+        entries.forEach((entry, index) => {
+            setTimeout(() => {
+                const link = document.createElement('a');
+                link.href = entry.dataUrl;
+                link.download = entry.fileName;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }, index * 120);
+        });
+
+        setStatus(`Downloading ${entries.length} abstract PDF(s).`, 'ok');
+    };
+
     const handlePaymentStatusUpdate = async (row, paymentStatus) => {
         if (!row?.id) {
             setStatus('Unable to update payment status for this record.', 'err');
@@ -602,9 +640,7 @@ export default function AdminDashboardPage() {
                                 {registrationControl.isOpen ? 'OPEN' : 'CLOSED'}
                             </span>
                         </div>
-                        <p className="registration-control-meta">
-                            Last updated by {registrationControl.updatedBy || 'system'} on {formatDate(registrationControl.updatedAt)}
-                        </p>
+                    
                         <div className="registration-control-actions">
                             <div className="registration-control-buttons">
                                 <button
@@ -637,6 +673,13 @@ export default function AdminDashboardPage() {
                                         onClick={() => handleDownloadSingleResponse(selectedRegistration)}
                                     >
                                         Download This Response
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className="btn-secondary"
+                                        onClick={() => handleDownloadAllAbstractPdfs(selectedRegistration)}
+                                    >
+                                        Download Abstract PDFs
                                     </button>
                                     <button
                                         type="button"
@@ -821,6 +864,15 @@ export default function AdminDashboardPage() {
                                                         onClick={() => handleViewDetails(row)}
                                                     >
                                                         View
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        className="btn-secondary view-btn"
+                                                        disabled={!hasAbstractPdfs(row)}
+                                                        onClick={() => handleDownloadAllAbstractPdfs(row)}
+                                                        title={hasAbstractPdfs(row) ? 'Download uploaded abstract PDFs' : 'No abstract PDFs uploaded'}
+                                                    >
+                                                        Abstract PDFs
                                                     </button>
                                                     <button
                                                         className="delete-btn"

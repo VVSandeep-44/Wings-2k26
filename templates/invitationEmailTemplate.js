@@ -26,6 +26,8 @@ const buildInvitationEmailHtml = ({
   const safeYear = validator.escape(year || "");
   const safeRegId = validator.escape(regId || "");
   const safeEventName = validator.escape(eventName || "");
+  const safeEventDateText = validator.escape(eventDateText || "");
+  const safeEventVenueText = validator.escape(eventVenueText || "");
   const registerUrl = String(
     eventRegisterUrl || "https://wings-2k26.onrender.com/#register"
   ).trim();
@@ -75,89 +77,99 @@ const buildInvitationEmailHtml = ({
     JSON.stringify(qrPayload)
   )}`;
 
-  const teamDetailsRows = isTeam
+  const teamDetailsBlocks = isTeam
     ? `
-          <tr>
-            <td style="padding: 8px 10px; border-bottom: 1px solid #edf0f7; color: #4a4f6a; width: 38%;"><strong>Team Name</strong></td>
-            <td style="padding: 8px 10px; border-bottom: 1px solid #edf0f7; color: #1f243d;">${safeTeamName || "N/A"}</td>
-          </tr>
-          <tr>
-            <td style="padding: 8px 10px; border-bottom: 1px solid #edf0f7; color: #4a4f6a; width: 38%;"><strong>Team Members</strong></td>
-            <td style="padding: 8px 10px; border-bottom: 1px solid #edf0f7; color: #1f243d;">${safeTeamMembersText || safeName}</td>
-          </tr>
+          <div style="padding: 10px 12px; border-bottom: 1px solid #edf1f8;">
+            <p style="margin: 0 0 3px; font-size: 11px; letter-spacing: 0.02em; text-transform: uppercase; color: #6a7693;"><strong>Team Name</strong></p>
+            <p style="margin: 0; font-size: 13px; color: #1d2742;">${safeTeamName || "N/A"}</p>
+          </div>
+          <div style="padding: 10px 12px; border-bottom: 1px solid #edf1f8;">
+            <p style="margin: 0 0 3px; font-size: 11px; letter-spacing: 0.02em; text-transform: uppercase; color: #6a7693;"><strong>Team Members</strong></p>
+            <p style="margin: 0; font-size: 13px; color: #1d2742;">${safeTeamMembersText || safeName}</p>
+          </div>
       `
     : "";
 
   return `
-  <div style="font-family: Arial, sans-serif; background-color: #f4f6fb; padding: 30px 10px;">
-    <div style="max-width: 650px; margin: auto; background: #ffffff; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
-
-      <!-- Header -->
-      <div style="background: linear-gradient(135deg, #1a237e, #3949ab); padding: 25px; text-align: center; color: #ffffff;">
-        <h1 style="margin: 0; font-size: 28px; letter-spacing: 1px;">
-          ${safeEventName}
-        </h1>
-        <p style="margin-top: 8px; font-size: 13px; opacity: 0.95;">
-          Registration Confirmation
+  <div style="margin: 0; padding: 24px 12px; background-color: #f3f6fb; font-family: 'Segoe UI', Arial, sans-serif; color: #1f2940;">
+    <div style="max-width: 700px; margin: 0 auto; background: #ffffff; border: 1px solid #e3e8f4; border-radius: 14px; overflow: hidden; box-shadow: 0 10px 30px rgba(22, 34, 66, 0.08);">
+      <div style="background: linear-gradient(135deg, #0f2b6f, #2246a5); color: #ffffff; padding: 26px 24px;">
+        <p style="margin: 0; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.92;">Registration Confirmed</p>
+        <h1 style="margin: 8px 0 0; font-size: 28px; line-height: 1.2;">${safeEventName}</h1>
+        <p style="margin: 10px 0 0; font-size: 14px; opacity: 0.94;">
+          Dear ${safeName || "Participant"}, your registration has been successfully recorded.
         </p>
       </div>
 
-      <!-- Body -->
-      <div style="padding: 30px; color: #333;">
-        <p style="font-size: 15px; margin: 0 0 12px;">Hi <strong>${safeName}</strong>, your registration is confirmed.</p>
-
-        <div style="border: 1px solid #e4e8f3; border-radius: 10px; overflow: hidden;">
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse; font-size: 13px;">
-            <tr>
-              <td style="padding: 8px 10px; border-bottom: 1px solid #edf0f7; color: #4a4f6a; width: 38%;"><strong>Registration ID</strong></td>
-              <td style="padding: 8px 10px; border-bottom: 1px solid #edf0f7; color: #1f243d;">${safeRegId}</td>
-            </tr>
-            <tr>
-              <td style="padding: 8px 10px; border-bottom: 1px solid #edf0f7; color: #4a4f6a; width: 38%;"><strong>College</strong></td>
-              <td style="padding: 8px 10px; border-bottom: 1px solid #edf0f7; color: #1f243d;">${safeCollege}</td>
-            </tr>
-            <tr>
-              <td style="padding: 8px 10px; border-bottom: 1px solid #edf0f7; color: #4a4f6a; width: 38%;"><strong>Department / Year</strong></td>
-              <td style="padding: 8px 10px; border-bottom: 1px solid #edf0f7; color: #1f243d;">${safeDepartment} / ${safeYear}</td>
-            </tr>
-            <tr>
-              <td style="padding: 8px 10px; border-bottom: 1px solid #edf0f7; color: #4a4f6a; width: 38%;"><strong>Participation</strong></td>
-              <td style="padding: 8px 10px; border-bottom: 1px solid #edf0f7; color: #1f243d;">${safeParticipationLabel}</td>
-            </tr>
-            ${teamDetailsRows}
-            <tr>
-              <td style="padding: 8px 10px; border-bottom: 1px solid #edf0f7; color: #4a4f6a; width: 38%;"><strong>Selected Events</strong></td>
-              <td style="padding: 8px 10px; border-bottom: 1px solid #edf0f7; color: #1f243d;">${safeEventsText}</td>
-            </tr>
-            <tr>
-              <td style="padding: 8px 10px; border-bottom: 1px solid #edf0f7; color: #4a4f6a; width: 38%;"><strong>Date / Venue</strong></td>
-              <td style="padding: 8px 10px; border-bottom: 1px solid #edf0f7; color: #1f243d;">${eventDateText} · ${eventVenueText}</td>
-            </tr>
-            <tr>
-              <td style="padding: 8px 10px; border-bottom: 1px solid #edf0f7; color: #4a4f6a; width: 38%;"><strong>Payment</strong></td>
-              <td style="padding: 8px 10px; border-bottom: 1px solid #edf0f7; color: #1f243d;">₹300 · Ref: ${safePaymentReference || "N/A"} · Submitted</td>
-            </tr>
-          </table>
+      <div style="padding: 24px;">
+        <div style="margin-bottom: 16px; padding: 14px 16px; border: 1px solid #dce4f6; border-radius: 10px; background: #f8fbff;">
+          <p style="margin: 0; font-size: 13px; color: #2a3655;">
+            <strong>Registration ID:</strong>
+            <span style="display: inline-block; margin-left: 6px; padding: 3px 8px; border-radius: 999px; background: #1f3f98; color: #ffffff; font-weight: 600; letter-spacing: 0.02em;">
+              ${safeRegId || "N/A"}
+            </span>
+          </p>
         </div>
 
-        <div style="margin-top: 14px; text-align: center;">
-          <p style="margin: 0 0 8px; font-size: 12px; color: #5c6384;">Scan for your registration details (for check-in)</p>
-          <a href="${safeRegisterUrl}" target="_blank" rel="noopener noreferrer" style="display: inline-block; text-decoration: none;">
-            <img src="${qrImageUrl}" alt="WINGS registration QR" width="140" height="140" style="display: block; border: 1px solid #e1e6f4; border-radius: 8px;" />
+        <div style="border: 1px solid #e4e9f5; border-radius: 10px; overflow: hidden;">
+          <div style="padding: 10px 12px; border-bottom: 1px solid #edf1f8;">
+            <p style="margin: 0 0 3px; font-size: 11px; letter-spacing: 0.02em; text-transform: uppercase; color: #6a7693;"><strong>Name</strong></p>
+            <p style="margin: 0; font-size: 13px; color: #1d2742;">${safeName || "N/A"}</p>
+          </div>
+          <div style="padding: 10px 12px; border-bottom: 1px solid #edf1f8;">
+            <p style="margin: 0 0 3px; font-size: 11px; letter-spacing: 0.02em; text-transform: uppercase; color: #6a7693;"><strong>Email</strong></p>
+            <p style="margin: 0; font-size: 13px; color: #1d2742;">${safeEmail || "N/A"}</p>
+          </div>
+          <div style="padding: 10px 12px; border-bottom: 1px solid #edf1f8;">
+            <p style="margin: 0 0 3px; font-size: 11px; letter-spacing: 0.02em; text-transform: uppercase; color: #6a7693;"><strong>Phone</strong></p>
+            <p style="margin: 0; font-size: 13px; color: #1d2742;">${safePhone || "N/A"}</p>
+          </div>
+          <div style="padding: 10px 12px; border-bottom: 1px solid #edf1f8;">
+            <p style="margin: 0 0 3px; font-size: 11px; letter-spacing: 0.02em; text-transform: uppercase; color: #6a7693;"><strong>College</strong></p>
+            <p style="margin: 0; font-size: 13px; color: #1d2742;">${safeCollege || "N/A"}</p>
+          </div>
+          <div style="padding: 10px 12px; border-bottom: 1px solid #edf1f8;">
+            <p style="margin: 0 0 3px; font-size: 11px; letter-spacing: 0.02em; text-transform: uppercase; color: #6a7693;"><strong>Department / Year</strong></p>
+            <p style="margin: 0; font-size: 13px; color: #1d2742;">${safeDepartment || "N/A"} / ${safeYear || "N/A"}</p>
+          </div>
+          <div style="padding: 10px 12px; border-bottom: 1px solid #edf1f8;">
+            <p style="margin: 0 0 3px; font-size: 11px; letter-spacing: 0.02em; text-transform: uppercase; color: #6a7693;"><strong>Participation</strong></p>
+            <p style="margin: 0; font-size: 13px; color: #1d2742;">${safeParticipationLabel}</p>
+          </div>
+          ${teamDetailsBlocks}
+          <div style="padding: 10px 12px; border-bottom: 1px solid #edf1f8;">
+            <p style="margin: 0 0 3px; font-size: 11px; letter-spacing: 0.02em; text-transform: uppercase; color: #6a7693;"><strong>Selected Events</strong></p>
+            <p style="margin: 0; font-size: 13px; color: #1d2742;">${safeEventsText || "N/A"}</p>
+          </div>
+          <div style="padding: 10px 12px; border-bottom: 1px solid #edf1f8;">
+            <p style="margin: 0 0 3px; font-size: 11px; letter-spacing: 0.02em; text-transform: uppercase; color: #6a7693;"><strong>Date / Venue</strong></p>
+            <p style="margin: 0; font-size: 13px; color: #1d2742;">${safeEventDateText || "TBD"} · ${safeEventVenueText || "TBD"}</p>
+          </div>
+          <div style="padding: 10px 12px;">
+            <p style="margin: 0 0 3px; font-size: 11px; letter-spacing: 0.02em; text-transform: uppercase; color: #6a7693;"><strong>Payment</strong></p>
+            <p style="margin: 0; font-size: 13px; color: #1d2742;">₹300 · Ref: ${safePaymentReference || "N/A"} · Submitted</p>
+          </div>
+        </div>
+
+        <div style="margin-top: 18px; padding: 14px; border: 1px dashed #cfd9ef; border-radius: 10px; text-align: center; background: #fcfdff;">
+          <p style="margin: 0 0 8px; font-size: 12px; color: #5b6788;">Use this QR for registration verification at check-in</p>
+          <a href="${safeRegisterUrl}" target="_blank" rel="noopener noreferrer" style="text-decoration: none; display: inline-block;">
+            <img src="${qrImageUrl}" alt="WINGS registration QR" width="150" height="150" style="display: block; border: 1px solid #dfe6f5; border-radius: 10px;" />
           </a>
         </div>
 
-        <p style="margin-top: 16px; font-size: 14px;">
-          See you at the venue.<br/>
+        <p style="margin: 18px 0 0; font-size: 13px; color: #2d3958; line-height: 1.6;">
+          We look forward to welcoming you at the event. Please keep this email and your registration ID handy for smooth entry.
+        </p>
+        <p style="margin: 10px 0 0; font-size: 14px; color: #1f2a46;">
+          Regards,<br />
           <strong>${safeEventName} Organizing Team</strong>
         </p>
       </div>
 
-      <!-- Footer -->
-      <div style="background-color: #f0f2f8; padding: 15px; text-align: center; font-size: 12px; color: #666;">
-        This email was sent because you registered for ${safeEventName}.
+      <div style="padding: 14px 20px; text-align: center; font-size: 12px; color: #6a7592; background: #f3f6fb; border-top: 1px solid #e3e8f4;">
+        This is an automated confirmation email for your registration to ${safeEventName}.
       </div>
-
     </div>
   </div>
   `;
