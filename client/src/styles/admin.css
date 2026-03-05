@@ -131,6 +131,115 @@
     color: #ff739c;
 }
 
+.admin-dashboard-body .registration-control-panel {
+    margin: 0 0 12px;
+    padding: 12px;
+    border-radius: 12px;
+    border: 1px solid #2b3360;
+    background: rgba(17, 23, 48, 0.88);
+}
+
+.admin-dashboard-body .registration-control-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.admin-dashboard-body .registration-control-head h3 {
+    margin: 0;
+    font-size: 1rem;
+    color: #dff6ff;
+}
+
+.admin-dashboard-body .registration-state {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.4px;
+}
+
+.admin-dashboard-body .registration-state.open {
+    background: rgba(88, 218, 172, 0.18);
+    border: 1px solid rgba(88, 218, 172, 0.5);
+    color: #8ff2cb;
+}
+
+.admin-dashboard-body .registration-state.closed {
+    background: rgba(255, 115, 156, 0.18);
+    border: 1px solid rgba(255, 115, 156, 0.52);
+    color: #ff9bbb;
+}
+
+.admin-dashboard-body .registration-control-meta,
+.admin-dashboard-body .registration-control-reason {
+    margin: 0 0 8px;
+    color: #acb4df;
+    font-size: 0.83rem;
+}
+
+.admin-dashboard-body .registration-control-actions {
+    display: grid;
+    gap: 8px;
+}
+
+.admin-dashboard-body .registration-control-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.admin-dashboard-body .registration-control-buttons button {
+    width: auto;
+}
+
+.admin-dashboard-body .close-confirm-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1200;
+    display: grid;
+    place-items: center;
+    background: rgba(6, 10, 24, 0.65);
+    backdrop-filter: blur(4px);
+    padding: 1rem;
+}
+
+.admin-dashboard-body .close-confirm-modal {
+    width: min(92vw, 430px);
+    border-radius: 12px;
+    border: 1px solid #2f3764;
+    background: #121937;
+    padding: 14px;
+    box-shadow: 0 16px 34px rgba(0, 0, 0, 0.4);
+}
+
+.admin-dashboard-body .close-confirm-modal h3 {
+    margin: 0 0 8px;
+    font-size: 1rem;
+    color: #f0ecff;
+}
+
+.admin-dashboard-body .close-confirm-modal p {
+    margin: 0;
+    color: #b7c0e8;
+    font-size: 0.9rem;
+    line-height: 1.45;
+}
+
+.admin-dashboard-body .close-confirm-actions {
+    margin-top: 12px;
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
+.admin-dashboard-body .close-confirm-actions button {
+    width: auto;
+}
+
 .admin-dashboard-body .selected-response-panel {
     margin: 0 0 12px;
     padding: 12px;
@@ -249,6 +358,12 @@
     text-decoration: none;
     font-size: 0.8rem;
     font-weight: 700;
+}
+
+.admin-dashboard-body .event-details-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
 }
 
 .admin-dashboard-body .head-logo {
@@ -420,6 +535,15 @@
     .admin-dashboard-body .selected-response-head {
         flex-direction: column;
         align-items: flex-start;
+    }
+
+    .admin-dashboard-body .registration-control-buttons {
+        display: grid;
+        grid-template-columns: 1fr;
+    }
+
+    .admin-dashboard-body .registration-control-buttons button {
+        width: 100%;
     }
 
     .admin-dashboard-body .selected-response-actions {

@@ -5,6 +5,8 @@ import {
     fetchRegistrations,
     deleteRegistration as deleteRegistrationApi,
     updateRegistrationPaymentStatus,
+    fetchAdminRegistrationStatus,
+    updateAdminRegistrationStatus,
     adminLogout,
 } from '../services/api';
 import '../styles/admin.css';
@@ -49,7 +51,69 @@ const EVENT_LABEL_MAP = Object.fromEntries(
     EVENT_OPTIONS.map((event) => [event.value, event.label])
 );
 
+const TECHNICAL_DETAILS_REQUIRED_EVENTS = new Set([
+    'project-expo',
+    'startup-pitching',
+    'paper-presentations',
+]);
+
 const formatEventName = (value) => EVENT_LABEL_MAP[value] || value || '-';
+
+const getRequiredTechnicalEvents = (events) =>
+    (Array.isArray(events) ? events : []).filter((event) =>
+        TECHNICAL_DETAILS_REQUIRED_EVENTS.has(event)
+    );
+
+const hasSubmissionDetails = (details) =>
+    Boolean(details?.topic?.trim()) &&
+    Boolean((details?.abstractPdfDataUrl || details?.abstract || '').trim());
+
+const getTechnicalSubmissionStatus = (row) => {
+    const requiredEvents = getRequiredTechnicalEvents(row?.events);
+    if (requiredEvents.length === 0) {
+        return 'Not Applicable';
+    }
+
+    const eventDetails = row?.eventDetails && typeof row.eventDetails === 'object'
+        ? row.eventDetails
+        : {};
+    const hasPending = requiredEvents.some((event) => !hasSubmissionDetails(eventDetails[event]));
+
+    return hasPending ? 'Pending' : 'Submitted';
+};
+
+const getTechnicalTopicsSummary = (row) => {
+    const requiredEvents = getRequiredTechnicalEvents(row?.events);
+    const eventDetails = row?.eventDetails && typeof row.eventDetails === 'object'
+        ? row.eventDetails
+        : {};
+
+    return requiredEvents
+        .map((event) => {
+            const details = eventDetails[event];
+            if (!details?.topic) return '';
+            return `${formatEventName(event)}: ${details.topic}`;
+        })
+        .filter(Boolean)
+        .join(' | ');
+};
+
+const getTechnicalPdfSummary = (row) => {
+    const requiredEvents = getRequiredTechnicalEvents(row?.events);
+    const eventDetails = row?.eventDetails && typeof row.eventDetails === 'object'
+        ? row.eventDetails
+        : {};
+
+    return requiredEvents
+        .map((event) => {
+            const details = eventDetails[event];
+            const filename = details?.abstractPdfName || (details?.abstractPdfDataUrl ? 'Uploaded PDF' : '');
+            if (!filename) return '';
+            return `${formatEventName(event)}: ${filename}`;
+        })
+        .filter(Boolean)
+        .join(' | ');
+};
 
 const sortByRegistrationTimeDesc = (rows) =>
     [...rows].sort((a, b) => {
@@ -69,7 +133,7 @@ const buildCsv = (rows) => {
     const headers = [
         'Name', 'Email', 'Phone', 'College', 'Department', 'Year',
         'Events', 'Registration ID', 'Participation Type', 'Team Name', 'Team Members', 'Payment Reference', 'Payment Status', 'Validation Status', 'Invitation Status',
-        'Validation Message', 'Created At',
+        'Technical Submission Status', 'Technical Topics', 'Abstract PDF Files', 'Validation Message', 'Created At',
     ];
     const lines = [headers.join(',')];
     rows.forEach((row) => {
@@ -85,6 +149,9 @@ const buildCsv = (rows) => {
                 escapeCsv(row.paymentStatus || 'submitted'),
                 escapeCsv(row.validationStatus || 'pending'),
                 escapeCsv(row.invitationStatus || 'queued'),
+                escapeCsv(getTechnicalSubmissionStatus(row)),
+                escapeCsv(getTechnicalTopicsSummary(row)),
+                escapeCsv(getTechnicalPdfSummary(row)),
                 escapeCsv(row.validationMessage || ''),
                 escapeCsv(formatDate(row.createdAt)),
             ].join(',')
@@ -107,6 +174,7 @@ const buildSingleRegistrationResponseJson = (row) =>
                 row?.eventDetails && typeof row.eventDetails === 'object'
                     ? row.eventDetails
                     : {},
+            technicalSubmissionStatus: getTechnicalSubmissionStatus(row),
             regId: row?.regId || '',
             participationType: row?.participationType || 'individual',
             teamName: row?.teamName || '',
@@ -148,6 +216,14 @@ export default function AdminDashboardPage() {
     const [deletingId, setDeletingId] = useState(null);
     const [paymentUpdatingId, setPaymentUpdatingId] = useState(null);
     const [selectedRegistration, setSelectedRegistration] = useState(null);
+    const [registrationControl, setRegistrationControl] = useState({
+        isOpen: true,
+        reason: '',
+        updatedAt: null,
+        updatedBy: 'system',
+    });
+    const [isUpdatingRegistrationStatus, setIsUpdatingRegistrationStatus] = useState(false);
+    const [showCloseConfirmPopup, setShowCloseConfirmPopup] = useState(false);
     const navigate = useNavigate();
 
     const setStatus = (message, type = '') => {
@@ -203,6 +279,20 @@ export default function AdminDashboardPage() {
         }
     }, [navigate]);
 
+    const loadRegistrationControl = useCallback(async () => {
+        try {
+            const result = await fetchAdminRegistrationStatus();
+            setRegistrationControl({
+                isOpen: result.isOpen !== false,
+                reason: result.reason || '',
+                updatedAt: result.updatedAt || null,
+                updatedBy: result.updatedBy || 'system',
+            });
+        } catch (error) {
+            setStatus(error.message || 'Could not load registration controls.', 'err');
+        }
+    }, []);
+
     useEffect(() => {
         const init = async () => {
             const ok = await checkAdminSession();
@@ -210,6 +300,7 @@ export default function AdminDashboardPage() {
                 navigate('/admin-login', { replace: true });
                 return;
             }
+            await loadRegistrationControl();
             const data = await loadRegistrations(limit);
             if (data) applyFilters(data, searchQuery, eventFilter, sortOrder);
         };
@@ -233,8 +324,51 @@ export default function AdminDashboardPage() {
     }, [filteredRegistrations, selectedRegistration]);
 
     const handleRefresh = async () => {
+        await loadRegistrationControl();
         const data = await loadRegistrations(limit);
         if (data) applyFilters(data, searchQuery, eventFilter, sortOrder);
+    };
+
+    const executeRegistrationToggle = async (nextIsOpen) => {
+        setIsUpdatingRegistrationStatus(true);
+        setStatus(nextIsOpen ? 'Opening registrations...' : 'Closing registrations...');
+
+        try {
+            const result = await updateAdminRegistrationStatus(
+                nextIsOpen,
+                '',
+                'admin'
+            );
+            setRegistrationControl({
+                isOpen: result.isOpen !== false,
+                reason: result.reason || '',
+                updatedAt: result.updatedAt || null,
+                updatedBy: result.updatedBy || 'admin',
+            });
+            setStatus(result.message || 'Registration status updated.', 'ok');
+        } catch (error) {
+            setStatus(error.message || 'Could not update registration status.', 'err');
+        } finally {
+            setIsUpdatingRegistrationStatus(false);
+        }
+    };
+
+    const handleToggleRegistrations = async (nextIsOpen) => {
+        if (!nextIsOpen) {
+            const firstConfirm = window.confirm(
+                'Are you sure you want to close registrations? Users will not be able to submit the form.'
+            );
+            if (!firstConfirm) return;
+            setShowCloseConfirmPopup(true);
+            return;
+        }
+
+        await executeRegistrationToggle(true);
+    };
+
+    const handlePopupCloseConfirm = async () => {
+        setShowCloseConfirmPopup(false);
+        await executeRegistrationToggle(false);
     };
 
     const handleLimitChange = async (newLimit) => {
@@ -433,6 +567,65 @@ export default function AdminDashboardPage() {
                         {statusMessage}
                     </div>
 
+                    {showCloseConfirmPopup ? (
+                        <div className="close-confirm-overlay" role="presentation">
+                            <div className="close-confirm-modal" role="dialog" aria-modal="true" aria-labelledby="closeConfirmTitle">
+                                <h3 id="closeConfirmTitle">Confirm Closing Registrations</h3>
+                                <p>
+                                    This will immediately block new registrations on the website.
+                                    Do you want to proceed?
+                                </p>
+                                <div className="close-confirm-actions">
+                                    <button
+                                        type="button"
+                                        className="btn-secondary"
+                                        onClick={() => setShowCloseConfirmPopup(false)}
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={handlePopupCloseConfirm}
+                                        disabled={isUpdatingRegistrationStatus}
+                                    >
+                                        Yes, Close Registrations
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    ) : null}
+
+                    <div className="registration-control-panel">
+                        <div className="registration-control-head">
+                            <h3>Registration Access Control</h3>
+                            <span className={`registration-state ${registrationControl.isOpen ? 'open' : 'closed'}`}>
+                                {registrationControl.isOpen ? 'OPEN' : 'CLOSED'}
+                            </span>
+                        </div>
+                        <p className="registration-control-meta">
+                            Last updated by {registrationControl.updatedBy || 'system'} on {formatDate(registrationControl.updatedAt)}
+                        </p>
+                        <div className="registration-control-actions">
+                            <div className="registration-control-buttons">
+                                <button
+                                    type="button"
+                                    className="btn-secondary"
+                                    onClick={() => handleToggleRegistrations(false)}
+                                    disabled={isUpdatingRegistrationStatus || registrationControl.isOpen === false}
+                                >
+                                    Close Registrations
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => handleToggleRegistrations(true)}
+                                    disabled={isUpdatingRegistrationStatus || registrationControl.isOpen === true}
+                                >
+                                    Open Registrations
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
                     {selectedRegistration && (
                         <div className="selected-response-panel">
                             <div className="selected-response-head">
@@ -465,6 +658,7 @@ export default function AdminDashboardPage() {
                                 <div><strong>Team Name:</strong> {selectedRegistration.teamName || '-'}</div>
                                 <div className="full"><strong>Team Members:</strong> {(selectedRegistration.teamMembers || []).join(', ') || '-'}</div>
                                 <div className="full"><strong>Events:</strong> {(selectedRegistration.events || []).map((event) => formatEventName(event)).join(', ') || '-'}</div>
+                                <div><strong>Technical Submission:</strong> {getTechnicalSubmissionStatus(selectedRegistration)}</div>
                                 <div className="full">
                                     <strong>Technical Event Details:</strong>{' '}
                                     {Object.keys(selectedRegistration.eventDetails || {}).length === 0 ? (
@@ -481,7 +675,7 @@ export default function AdminDashboardPage() {
                                                         Abstract PDF: {details?.abstractPdfName || details?.abstract ? (details?.abstractPdfName || 'Uploaded') : '-'}
                                                     </div>
                                                     {details?.abstractPdfDataUrl ? (
-                                                        <div>
+                                                        <div className="event-details-links">
                                                             <a
                                                                 href={details.abstractPdfDataUrl}
                                                                 target="_blank"
@@ -489,6 +683,13 @@ export default function AdminDashboardPage() {
                                                                 className="event-details-pdf-link"
                                                             >
                                                                 View PDF
+                                                            </a>
+                                                            <a
+                                                                href={details.abstractPdfDataUrl}
+                                                                download={details?.abstractPdfName || `${eventKey}-abstract.pdf`}
+                                                                className="event-details-pdf-link"
+                                                            >
+                                                                Download PDF
                                                             </a>
                                                         </div>
                                                     ) : null}

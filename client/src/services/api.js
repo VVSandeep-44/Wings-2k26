@@ -158,3 +158,52 @@ export const updateRegistrationPaymentStatus = async (id, paymentStatus, verifie
 
     return result;
 };
+
+export const fetchRegistrationStatus = async () => {
+    const response = await fetch(buildApiUrl('/api/registration-status'), {
+        method: 'GET',
+        cache: 'no-store',
+    });
+
+    const result = await response.json().catch(() => ({}));
+
+    if (!response.ok || !result.success) {
+        throw new Error(result.message || 'Failed to fetch registration status');
+    }
+
+    return result;
+};
+
+export const fetchAdminRegistrationStatus = async () => {
+    const response = await fetch(buildApiUrl('/api/admin/registration-status'), {
+        method: 'GET',
+        credentials: 'include',
+        cache: 'no-store',
+    });
+
+    const result = await response.json().catch(() => ({}));
+
+    if (!response.ok || !result.success) {
+        throw new Error(result.message || 'Failed to fetch admin registration status');
+    }
+
+    return result;
+};
+
+export const updateAdminRegistrationStatus = async (isOpen, reason = '', updatedBy = 'admin') => {
+    const response = await fetch(buildApiUrl('/api/admin/registration-status'), {
+        method: 'PATCH',
+        credentials: 'include',
+        cache: 'no-store',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isOpen, reason, updatedBy }),
+    });
+
+    const result = await response.json().catch(() => ({}));
+
+    if (!response.ok || !result.success) {
+        throw new Error(result.message || 'Failed to update registration status');
+    }
+
+    return result;
+};

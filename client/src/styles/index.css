@@ -642,6 +642,27 @@ nav.scrolled {
     color: #ffd166;
 }
 
+.registration-closed-inline {
+    width: min(100%, 860px);
+    margin: 0 auto 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    text-align: center;
+    padding: 0.56rem 0.82rem;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 115, 156, 0.55);
+    background: rgba(255, 115, 156, 0.14);
+    color: #ffb2c8;
+    font-size: clamp(0.88rem, 1.15vw, 0.95rem);
+    font-weight: 700;
+}
+
+.registration-closed-inline i {
+    color: #ff89ac;
+}
+
 .college-promo {
     max-width: 1120px;
     margin: 0 auto 1.2rem;

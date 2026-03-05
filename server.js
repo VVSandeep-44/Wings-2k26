@@ -32,6 +32,8 @@ const {
   updateRegistrationByRegId,
   listRegistrations,
   deleteRegistrationById,
+  getRegistrationControl,
+  setRegistrationControl,
 } = require("./db");
 
 const app = express();
@@ -673,7 +675,103 @@ app.get("/api/admin-session", (req, res) => {
   return res.json({ success: true, authenticated: true });
 });
 
+app.get("/api/registration-status", async (_req, res) => {
+  try {
+    const status = await getRegistrationControl();
+    return res.json({
+      success: true,
+      isOpen: status.isOpen !== false,
+      reason: status.reason || "",
+      updatedAt: status.updatedAt || null,
+      updatedBy: status.updatedBy || "system",
+    });
+  } catch (error) {
+    reportError(error, { route: "/api/registration-status", method: "GET" });
+    return res.status(500).json({
+      success: false,
+      message: "Could not fetch registration status",
+      error: error.message,
+    });
+  }
+});
+
+app.get("/api/admin/registration-status", requireAdminAuth, async (_req, res) => {
+  try {
+    const status = await getRegistrationControl();
+    return res.json({
+      success: true,
+      isOpen: status.isOpen !== false,
+      reason: status.reason || "",
+      updatedAt: status.updatedAt || null,
+      updatedBy: status.updatedBy || "system",
+    });
+  } catch (error) {
+    reportError(error, { route: "/api/admin/registration-status", method: "GET" });
+    return res.status(500).json({
+      success: false,
+      message: "Could not fetch admin registration status",
+      error: error.message,
+    });
+  }
+});
+
+app.patch("/api/admin/registration-status", requireAdminAuth, async (req, res) => {
+  const requestedIsOpen = req.body?.isOpen;
+
+  if (typeof requestedIsOpen !== "boolean") {
+    return res.status(400).json({
+      success: false,
+      message: "isOpen must be a boolean",
+    });
+  }
+
+  const requestedReason = String(req.body?.reason || "").trim();
+  const requestedBy = String(req.body?.updatedBy || "admin").trim() || "admin";
+
+  try {
+    const updated = await setRegistrationControl({
+      isOpen: requestedIsOpen,
+      reason: requestedIsOpen ? "" : requestedReason,
+      updatedBy: requestedBy,
+    });
+
+    return res.json({
+      success: true,
+      message: updated.isOpen
+        ? "Registrations are now open"
+        : "Registrations are now closed",
+      ...updated,
+    });
+  } catch (error) {
+    reportError(error, { route: "/api/admin/registration-status", method: "PATCH" });
+    return res.status(500).json({
+      success: false,
+      message: "Could not update registration status",
+      error: error.message,
+    });
+  }
+});
+
 app.post("/api/register", async (req, res) => {
+  try {
+    const registrationStatus = await getRegistrationControl();
+    if (registrationStatus.isOpen === false) {
+      return res.status(403).json({
+        success: false,
+        message:
+          registrationStatus.reason ||
+          "Registrations are currently closed by the admin.",
+      });
+    }
+  } catch (statusError) {
+    reportError(statusError, { route: "/api/register", stage: "status-check" });
+    return res.status(500).json({
+      success: false,
+      message: "Could not verify registration availability",
+      error: statusError.message,
+    });
+  }
+
   const payload = req.body;
 
   const missing = requiredFields.filter((field) => payload[field] === undefined || payload[field] === null || payload[field] === "");

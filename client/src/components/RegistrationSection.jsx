@@ -1,6 +1,6 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { QRCodeCanvas } from 'qrcode.react';
-import { submitRegistration, checkHealth } from '../services/api';
+import { submitRegistration, checkHealth, fetchRegistrationStatus } from '../services/api';
 
 const PAYMENT_QR_VALUE =
     import.meta.env.VITE_PAYMENT_QR_VALUE ||
@@ -75,7 +75,29 @@ export default function RegistrationSection() {
     const [statusType, setStatusType] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showBanner, setShowBanner] = useState(false);
+    const [registrationControl, setRegistrationControl] = useState({
+        isOpen: true,
+        reason: '',
+    });
     const warmupDoneRef = useRef(false);
+
+    const loadRegistrationStatus = async () => {
+        try {
+            const status = await fetchRegistrationStatus();
+            setRegistrationControl({
+                isOpen: status.isOpen !== false,
+                reason: status.reason || '',
+            });
+            return status;
+        } catch (_error) {
+            return { isOpen: true, reason: '' };
+        }
+    };
+
+    useEffect(() => {
+        loadRegistrationStatus();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -227,6 +249,13 @@ export default function RegistrationSection() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        const latestStatus = await loadRegistrationStatus();
+        if (latestStatus?.isOpen === false) {
+            setStatusMessage(latestStatus.reason || 'Registrations are currently closed by the admin.');
+            setStatusType('error');
+            return;
+        }
 
         const isPhoneValid = /^\+?[0-9\s-]{10,15}$/.test(formData.phone.trim());
         if (!isPhoneValid) {
@@ -441,8 +470,24 @@ export default function RegistrationSection() {
             <section className="registration" id="register">
                 <h2 className="section-title">Register for WINGS 2k26</h2>
                 <div className="registration-deadline-inline" role="note" aria-label="Registration deadline notice">
-                    <i className="fas fa-clock"></i> Registration closes on 11th March,2026 at 5PM.
+                    <i className="fas fa-clock"></i>
+                    <span>
+                        Registration closes on 11th March, 2026 at 5 PM.
+                        <br />
+                        On-spot registrations available.
+                        <br />
+                        Technical events starts at 10 AM on 13th March.
+                    </span>
                 </div>
+                {registrationControl.isOpen === false ? (
+                    <div className="registration-closed-inline" role="alert" aria-live="polite">
+                        <i className="fas fa-ban"></i>
+                        <span>
+                            Registrations are currently closed.
+                            {registrationControl.reason ? ` ${registrationControl.reason}` : ''}
+                        </span>
+                    </div>
+                ) : null}
 
                 <div className="registration-container">
                     {/* Registration Form */}
@@ -689,8 +734,12 @@ export default function RegistrationSection() {
                                 </div>
                             </details>
 
-                            <button type="submit" className="submit-btn" disabled={isSubmitting}>
-                                {isSubmitting ? 'Loading...' : 'Submit Registration'}
+                            <button type="submit" className="submit-btn" disabled={isSubmitting || registrationControl.isOpen === false}>
+                                {registrationControl.isOpen === false
+                                    ? 'Registrations Closed'
+                                    : isSubmitting
+                                        ? 'Loading...'
+                                        : 'Submit Registration'}
                             </button>
                             <div
                                 className={`form-status ${statusType}`}

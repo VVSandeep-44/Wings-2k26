@@ -4,6 +4,8 @@ const MONGODB_URI = process.env.MONGODB_URI || process.env.DATABASE_URL || "";
 const DB_NAME = process.env.MONGODB_DB_NAME || "wings2k26";
 const REGISTRATIONS_COLLECTION = "registrations";
 const COUNTERS_COLLECTION = "counters";
+const SETTINGS_COLLECTION = "settings";
+const REGISTRATION_CONTROL_DOC_ID = "registrationControl";
 const IS_PRODUCTION = process.env.NODE_ENV === "production";
 const ALLOW_IN_MEMORY_FALLBACK = !IS_PRODUCTION;
 
@@ -13,6 +15,12 @@ let registrationsCollection;
 let inMemoryMode = false;
 let inMemoryRegistrations = [];
 let inMemoryCounter = 0;
+let inMemoryRegistrationControl = {
+  isOpen: true,
+  reason: "",
+  updatedAt: new Date().toISOString(),
+  updatedBy: "system",
+};
 
 const enableInMemoryMode = (reason) => {
   if (inMemoryMode) {
@@ -188,6 +196,76 @@ const listRegistrations = async (limit) => {
     .toArray();
 };
 
+const getRegistrationControl = async () => {
+  if (inMemoryMode) {
+    return { ...inMemoryRegistrationControl };
+  }
+
+  if (!database) {
+    throw new Error("Database is not initialized");
+  }
+
+  const settings = database.collection(SETTINGS_COLLECTION);
+  const existing = await settings.findOne({ _id: REGISTRATION_CONTROL_DOC_ID });
+
+  if (existing) {
+    return {
+      isOpen: existing.isOpen !== false,
+      reason: String(existing.reason || ""),
+      updatedAt: existing.updatedAt || null,
+      updatedBy: String(existing.updatedBy || "system"),
+    };
+  }
+
+  const defaults = {
+    _id: REGISTRATION_CONTROL_DOC_ID,
+    isOpen: true,
+    reason: "",
+    updatedAt: new Date().toISOString(),
+    updatedBy: "system",
+  };
+
+  await settings.updateOne(
+    { _id: REGISTRATION_CONTROL_DOC_ID },
+    { $setOnInsert: defaults },
+    { upsert: true }
+  );
+
+  return {
+    isOpen: true,
+    reason: "",
+    updatedAt: defaults.updatedAt,
+    updatedBy: "system",
+  };
+};
+
+const setRegistrationControl = async ({ isOpen, reason, updatedBy }) => {
+  const payload = {
+    isOpen: Boolean(isOpen),
+    reason: String(reason || ""),
+    updatedAt: new Date().toISOString(),
+    updatedBy: String(updatedBy || "admin"),
+  };
+
+  if (inMemoryMode) {
+    inMemoryRegistrationControl = { ...payload };
+    return { ...inMemoryRegistrationControl };
+  }
+
+  if (!database) {
+    throw new Error("Database is not initialized");
+  }
+
+  const settings = database.collection(SETTINGS_COLLECTION);
+  await settings.updateOne(
+    { _id: REGISTRATION_CONTROL_DOC_ID },
+    { $set: payload },
+    { upsert: true }
+  );
+
+  return { ...payload };
+};
+
 const deleteRegistrationById = async (id) => {
   if (inMemoryMode) {
     const numericId = Number(id);
@@ -214,4 +292,6 @@ module.exports = {
   updateRegistrationByRegId,
   listRegistrations,
   deleteRegistrationById,
+  getRegistrationControl,
+  setRegistrationControl,
 };
