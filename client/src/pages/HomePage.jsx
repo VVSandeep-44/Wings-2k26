@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import HeroSection from '../components/HeroSection';
 import AboutSection from '../components/AboutSection';
+import EventsSection from '../components/EventsSection';
 import RegistrationSection from '../components/RegistrationSection';
 import ContactSection from '../components/ContactSection';
 import Footer from '../components/Footer';
@@ -31,6 +32,54 @@ export default function HomePage() {
             };
             document.head.appendChild(script);
         }
+
+        const revealSelector = [
+            '.section-title',
+            '.about-content > p',
+            '.college-promo',
+            '.event-card',
+            '.registration-deadline-inline',
+            '.registration-closed-inline',
+            '.form-container',
+            '.contact-item',
+            '.social-links a',
+            'footer p',
+            '.event-details',
+            '.countdown-item',
+            '.cta-button',
+        ].join(', ');
+
+        const markedElements = new Set();
+        const observer = new IntersectionObserver(
+            (entries) => {
+                entries.forEach((entry) => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('is-visible');
+                        observer.unobserve(entry.target);
+                    }
+                });
+            },
+            { threshold: 0.14, rootMargin: '0px 0px -8% 0px' }
+        );
+
+        const markRevealTargets = () => {
+            const targets = document.querySelectorAll(revealSelector);
+            targets.forEach((element, index) => {
+                if (markedElements.has(element)) return;
+                markedElements.add(element);
+                element.classList.add('reveal-on-scroll');
+                element.style.setProperty('--reveal-delay', `${(index % 6) * 70}ms`);
+                observer.observe(element);
+            });
+        };
+
+        markRevealTargets();
+        const delayedRefresh = setTimeout(markRevealTargets, 450);
+
+        return () => {
+            clearTimeout(delayedRefresh);
+            observer.disconnect();
+        };
     }, []);
 
     return (
@@ -39,6 +88,7 @@ export default function HomePage() {
             <HeroSection />
             <div className="mid-sections-bg">
                 <AboutSection />
+                <EventsSection />
                 <RegistrationSection />
                 <ContactSection />
             </div>

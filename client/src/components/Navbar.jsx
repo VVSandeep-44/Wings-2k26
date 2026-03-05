@@ -21,7 +21,7 @@ export default function Navbar() {
     return (
         <nav ref={navRef} className={scrolled ? 'scrolled' : ''}>
             <a href="#home" className="logo">
-                <i className="fas fa-feather-alt"></i> WINGS 2026
+                <img src="/assets/pydah-logo.jpeg" alt="Pydah Logo" />
             </a>
             <button
                 className="menu-toggle"
