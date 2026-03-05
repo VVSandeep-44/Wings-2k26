@@ -39,7 +39,7 @@ export default function HeroSection() {
                         <span className="hero-title-wrap">
                             <img
                                 className="hero-title-image"
-                                src="/assets/logopng.png"
+                                src="/assets/Wingslogo.png"
                                 alt="WINGS 2k26"
                             />
                         </span>

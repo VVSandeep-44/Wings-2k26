@@ -62,6 +62,8 @@ const CORS_ORIGINS = String(process.env.CORS_ORIGINS || "")
 const EVENT_NAME = "WINGS 2k26";
 const EVENT_DATE_TEXT = "March 13-14, 2026";
 const EVENT_VENUE_TEXT = "Pydah College of Engineering";
+const EVENT_REGISTER_URL =
+  process.env.EVENT_REGISTER_URL || "https://wings-2k26.onrender.com/#register";
 const SENTRY_DSN = process.env.SENTRY_DSN || "";
 const SENTRY_ENVIRONMENT =
   process.env.SENTRY_ENVIRONMENT || process.env.NODE_ENV || "development";
@@ -303,7 +305,20 @@ const validateEmailInBackground = async (email) => {
   return { valid: true, reason: "Email verified" };
 };
 
-const sendInvitationEmail = async ({ name, email, regId, events }) => {
+const sendInvitationEmail = async ({
+  name,
+  email,
+  phone,
+  college,
+  department,
+  year,
+  regId,
+  events,
+  participationType,
+  teamName,
+  teamMembers,
+  paymentReference,
+}) => {
   if (!BREVO_API_KEY) {
     return {
       sent: false,
@@ -314,11 +329,21 @@ const sendInvitationEmail = async ({ name, email, regId, events }) => {
 
   const htmlContent = buildInvitationEmailHtml({
     name,
+    email,
+    phone,
+    college,
+    department,
+    year,
     regId,
     events,
+    participationType,
+    teamName,
+    teamMembers,
+    paymentReference,
     eventName: EVENT_NAME,
     eventDateText: EVENT_DATE_TEXT,
     eventVenueText: EVENT_VENUE_TEXT,
+    eventRegisterUrl: EVENT_REGISTER_URL,
   });
 
   try {
@@ -362,8 +387,16 @@ const runRegistrationValidationWorkflow = async ({
   id,
   name,
   email,
+  phone,
+  college,
+  department,
+  year,
   regId,
   events,
+  participationType,
+  teamName,
+  teamMembers,
+  paymentReference,
 }) => {
   const syncRegistrationStatus = async (updates) => {
     const byId = await updateRegistrationById(id, updates);
@@ -401,7 +434,20 @@ const runRegistrationValidationWorkflow = async ({
       updatedAt: new Date().toISOString(),
     });
 
-    const invitation = await sendInvitationEmail({ name, email, regId, events });
+    const invitation = await sendInvitationEmail({
+      name,
+      email,
+      phone,
+      college,
+      department,
+      year,
+      regId,
+      events,
+      participationType,
+      teamName,
+      teamMembers,
+      paymentReference,
+    });
 
     await syncRegistrationStatus({
       invitationStatus: invitation.sent ? "sent" : "failed",
@@ -646,8 +692,18 @@ app.post("/api/register", async (req, res) => {
         name: String(payload.name).trim(),
         email: normalizedEmail,
         phone: normalizedPhone,
+        college: String(payload.college).trim(),
+        department: String(payload.department).trim(),
+        year: String(payload.year).trim(),
         regId: String(payload.regId).trim(),
         events: eventsArray,
+        participationType,
+        teamName: participationType === "team" ? teamName : "",
+        teamMembers:
+          participationType === "team"
+            ? teamMembers
+            : [String(payload.name).trim()],
+        paymentReference: String(payload.paymentReference).trim(),
       });
     });
 

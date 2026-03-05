@@ -2,7 +2,7 @@ import { useState, useRef } from 'react';
 import { QRCodeCanvas } from 'qrcode.react';
 import { submitRegistration, checkHealth } from '../services/api';
 
-const QR_URL = 'https://wings-2k26.onrender.com/#register';
+const QR_URL = 'https://wings-2k26.netlify.app/#register';
 const PAYMENT_QR_VALUE =
     import.meta.env.VITE_PAYMENT_QR_VALUE ||
     'upi://pay?pa=303908985042716@cnrb&pn=Wings%202k26&am=300&cu=INR&tn=WINGS%202k26%20Registration';
