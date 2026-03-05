@@ -55,10 +55,33 @@ const BREVO_API_KEY =
   process.env.SMTP_PASS ||
   process.env.SMTP_PASSWORD ||
   "";
-const CORS_ORIGINS = String(process.env.CORS_ORIGINS || "")
+const normalizeOrigin = (origin) =>
+  String(origin || "")
+    .trim()
+    .replace(/\/+$/, "")
+    .toLowerCase();
+
+const parseOriginFromUrl = (value) => {
+  try {
+    return normalizeOrigin(new URL(String(value || "").trim()).origin);
+  } catch (_error) {
+    return "";
+  }
+};
+
+const configuredCorsOrigins = String(process.env.CORS_ORIGINS || "")
   .split(",")
-  .map((origin) => origin.trim())
+  .map((origin) => normalizeOrigin(origin))
   .filter(Boolean);
+
+const registerUrlOrigin = parseOriginFromUrl(process.env.EVENT_REGISTER_URL || "");
+
+const CORS_ORIGINS = Array.from(
+  new Set([
+    ...configuredCorsOrigins,
+    ...(registerUrlOrigin ? [registerUrlOrigin] : []),
+  ])
+);
 const EVENT_NAME = "WINGS 2k26";
 const EVENT_DATE_TEXT = "March 13-14, 2026";
 const EVENT_VENUE_TEXT = "Pydah College of Engineering";
@@ -191,11 +214,21 @@ const getJson = (url, headers = {}) => requestJson("GET", url, null, headers);
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin) {
+      const normalizedOrigin = normalizeOrigin(origin);
+
+      if (!normalizedOrigin) {
         return callback(null, true);
       }
 
-      if (CORS_ORIGINS.length === 0 || CORS_ORIGINS.includes(origin)) {
+      const isLocalDevOrigin = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(
+        normalizedOrigin
+      );
+
+      if (
+        CORS_ORIGINS.length === 0 ||
+        CORS_ORIGINS.includes(normalizedOrigin) ||
+        (!IS_PRODUCTION && isLocalDevOrigin)
+      ) {
         return callback(null, true);
       }
 

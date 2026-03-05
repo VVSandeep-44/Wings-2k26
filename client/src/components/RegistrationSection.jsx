@@ -2,7 +2,6 @@ import { useState, useRef } from 'react';
 import { QRCodeCanvas } from 'qrcode.react';
 import { submitRegistration, checkHealth } from '../services/api';
 
-const QR_URL = 'https://wings-2k26.netlify.app/#register';
 const PAYMENT_QR_VALUE =
     import.meta.env.VITE_PAYMENT_QR_VALUE ||
     'upi://pay?pa=303908985042716@cnrb&pn=Wings%202k26&am=300&cu=INR&tn=WINGS%202k26%20Registration';
@@ -61,10 +60,8 @@ export default function RegistrationSection() {
     const [statusMessage, setStatusMessage] = useState('');
     const [statusType, setStatusType] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [regId, setRegId] = useState('');
     const [showBanner, setShowBanner] = useState(false);
     const warmupDoneRef = useRef(false);
-    const qrRef = useRef(null);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -133,7 +130,6 @@ export default function RegistrationSection() {
 
         const newRegId =
             'WINGS2026-' + Math.random().toString(36).substring(2, 11).toUpperCase();
-        setRegId(newRegId);
 
         const payload = {
             name: formData.name.trim(),
@@ -198,16 +194,6 @@ export default function RegistrationSection() {
         } finally {
             setIsSubmitting(false);
             setShowBanner(false);
-        }
-    };
-
-    const downloadQR = () => {
-        const canvas = qrRef.current?.querySelector('canvas');
-        if (canvas) {
-            const link = document.createElement('a');
-            link.download = 'WINGS2026-Registration-QR.png';
-            link.href = canvas.toDataURL('image/png');
-            link.click();
         }
     };
 
@@ -472,33 +458,6 @@ export default function RegistrationSection() {
                         </form>
                     </div>
 
-                    {/* QR Code Section */}
-                    <div className="qr-container">
-                        <h3><i className="fas fa-qrcode"></i> Scan to Register</h3>
-                        <div id="qrcode" ref={qrRef}>
-                            <QRCodeCanvas
-                                value={QR_URL}
-                                size={200}
-                                bgColor="#ffffff"
-                                fgColor="#000000"
-                                level="H"
-                            />
-                        </div>
-                        <p>Scan this QR code to open the registration form on your phone!</p>
-                        <p>
-                            <a href={QR_URL} target="_blank" rel="noopener noreferrer">
-                                {QR_URL}
-                            </a>
-                        </p>
-                        {regId && (
-                            <p className="reg-id">
-                                <strong>Registration ID:</strong> {regId}
-                            </p>
-                        )}
-                        <button className="download-btn" onClick={downloadQR}>
-                            <i className="fas fa-download"></i> Download QR Code
-                        </button>
-                    </div>
                 </div>
             </section>
         </>

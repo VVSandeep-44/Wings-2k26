@@ -33,6 +33,17 @@ export default function HeroSection() {
 
     return (
         <section className="hero" id="home">
+            <video
+                className="hero-bg-video"
+                autoPlay
+                loop
+                muted
+                playsInline
+                preload="metadata"
+                aria-hidden="true"
+            >
+                <source src="/assets/herobg.mp4" type="video/mp4" />
+            </video>
             <div className="hero-content">
                 <h1>
                     <span className="hero-title-stack">

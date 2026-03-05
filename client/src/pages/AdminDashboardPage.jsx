@@ -30,6 +30,25 @@ const escapeCsv = (value) => {
     return text;
 };
 
+const EVENT_OPTIONS = [
+    { value: 'circuitry', label: 'Circuitry' },
+    { value: 'robotics', label: 'Robotics' },
+    { value: 'web-planting-ai', label: 'Web Planting with AI' },
+    { value: 'techno-quiz', label: 'Techno Quiz' },
+    { value: 'debugging', label: 'Debugging Events' },
+    { value: 'startup-pitching', label: 'Startup Idea Pitching' },
+    { value: 'paper-presentations', label: 'Paper Presentations (PPT)' },
+    { value: 'short-film', label: 'Short Film Making' },
+    { value: 'standup-comedy', label: 'Standup Comedy' },
+    { value: 'ad-making', label: 'Ad Making' },
+];
+
+const EVENT_LABEL_MAP = Object.fromEntries(
+    EVENT_OPTIONS.map((event) => [event.value, event.label])
+);
+
+const formatEventName = (value) => EVENT_LABEL_MAP[value] || value || '-';
+
 const buildCsv = (rows) => {
     const headers = [
         'Name', 'Email', 'Phone', 'College', 'Department', 'Year',
@@ -42,7 +61,7 @@ const buildCsv = (rows) => {
             [
                 escapeCsv(row.name), escapeCsv(row.email), escapeCsv(row.phone),
                 escapeCsv(row.college), escapeCsv(row.department), escapeCsv(row.year),
-                escapeCsv((row.events || []).join(' | ')), escapeCsv(row.regId),
+                escapeCsv((row.events || []).map((event) => formatEventName(event)).join(' | ')), escapeCsv(row.regId),
                 escapeCsv(row.participationType || 'individual'),
                 escapeCsv(row.teamName || ''),
                 escapeCsv((row.teamMembers || []).join(' | ')),
@@ -237,10 +256,11 @@ export default function AdminDashboardPage() {
                             onChange={(e) => setEventFilter(e.target.value)}
                         >
                             <option value="all">All Events</option>
-                            <option value="cultural">Cultural</option>
-                            <option value="technical">Technical</option>
-                            <option value="sports">Sports</option>
-                            <option value="workshop">Workshop</option>
+                            {EVENT_OPTIONS.map((event) => (
+                                <option key={event.value} value={event.value}>
+                                    {event.label}
+                                </option>
+                            ))}
                         </select>
                         <div className="controls-menu-wrap">
                             <button
@@ -332,7 +352,7 @@ export default function AdminDashboardPage() {
                                             <td data-label="Events">
                                                 {(row.events || []).map((event) => (
                                                     <span className="badge" key={event}>
-                                                        {event}
+                                                        {formatEventName(event)}
                                                     </span>
                                                 ))}
                                             </td>

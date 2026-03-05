@@ -214,12 +214,19 @@ nav.scrolled {
     justify-content: center;
     text-align: center;
     padding: clamp(116px, 12vw, 140px) 20px clamp(68px, 8vw, 80px);
-    background:
-        radial-gradient(circle at 18% 18%, rgba(56, 249, 255, 0.22), transparent 33%),
-        radial-gradient(circle at 82% 82%, rgba(255, 45, 149, 0.26), transparent 36%),
-        radial-gradient(circle at 50% 0%, rgba(124, 77, 255, 0.22), transparent 38%),
-        linear-gradient(125deg, #070811 0%, #110e2a 48%, #1a1140 100%);
+    background: #070811;
     overflow: hidden;
+}
+
+.hero-bg-video {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center center;
+    z-index: 0;
+    pointer-events: none;
 }
 
 .hero::before,
@@ -228,6 +235,7 @@ nav.scrolled {
     position: absolute;
     border-radius: 50%;
     filter: blur(2px);
+    z-index: 1;
 }
 
 .hero::before {
@@ -282,7 +290,7 @@ nav.scrolled {
 
 .hero-content {
     position: relative;
-    z-index: 1;
+    z-index: 2;
     max-width: 920px;
     animation: ambientPulse 6.5s ease-in-out infinite;
 }
@@ -561,7 +569,7 @@ nav.scrolled {
     flex: 0 0 clamp(230px, 28vw, 300px);
     padding: clamp(1.2rem, 2.8vw, 2rem) clamp(1rem, 2.1vw, 1.4rem);
     border-radius: var(--radius-lg);
-    background: linear-gradient(145deg, #12152b, #1a1140);
+    background: linear-gradient(145deg, rgba(18, 21, 43, 0.72), rgba(26, 17, 64, 0.72));
     color: #f8f9ff;
     border: 1px solid rgba(124, 77, 255, 0.32);
     box-shadow: var(--shadow-card);
@@ -610,7 +618,7 @@ nav.scrolled {
     margin: 0 auto 1.2rem;
     padding: 1rem;
     border-radius: var(--radius-lg);
-    background: linear-gradient(135deg, rgba(20, 24, 46, 0.9), rgba(30, 18, 70, 0.9));
+    background: linear-gradient(135deg, rgba(20, 24, 46, 0.72), rgba(30, 18, 70, 0.72));
     border: 1px solid rgba(56, 249, 255, 0.25);
     display: grid;
     grid-template-columns: clamp(132px, 16vw, 172px) 1fr;
@@ -689,22 +697,28 @@ nav.scrolled {
 
 .registration-container {
     max-width: 1120px;
+    width: min(100%, 1120px);
     margin: 0 auto;
     display: grid;
-    grid-template-columns: minmax(0, 1.35fr) minmax(280px, 1fr);
+    grid-template-columns: 1fr;
     gap: clamp(1rem, 2vw, 1.6rem);
     align-items: start;
+    justify-items: center;
 }
 
 .form-container,
 .qr-container {
-    background: var(--surface);
+    background: rgba(20, 23, 44, 0.72);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-soft);
     border: 1px solid rgba(124, 77, 255, 0.24);
+    backdrop-filter: blur(8px);
 }
 
 .form-container {
+    width: min(100%, 860px);
+    max-width: 100%;
+    overflow: hidden;
     padding: clamp(1rem, 2.6vw, 1.8rem);
 }
 
@@ -721,6 +735,7 @@ nav.scrolled {
 
 .form-group {
     display: grid;
+    min-width: 0;
     gap: 0.45rem;
 }
 
@@ -752,10 +767,11 @@ nav.scrolled {
 .checkbox-group {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    min-width: 0;
     gap: 0.7rem;
     padding: 0.85rem;
     border-radius: 12px;
-    background: var(--surface-2);
+    background: rgba(27, 31, 57, 0.62);
     border: 1px solid #30365f;
 }
 
@@ -783,12 +799,14 @@ nav.scrolled {
 }
 
 .events-layout {
+    display: grid;
     grid-template-columns: 1fr 1fr;
+    min-width: 0;
     gap: 0.7rem;
 }
 
 .event-category {
-    background: rgba(14, 19, 43, 0.55);
+    background: rgba(14, 19, 43, 0.42);
     border: 1px solid #2f3660;
     border-radius: 10px;
     padding: 0.55rem;
@@ -859,7 +877,7 @@ nav.scrolled {
     padding: clamp(0.7rem, 1.2vw, 0.8rem) clamp(0.65rem, 1.2vw, 0.85rem);
     border-radius: 10px;
     color: #ccd2f3;
-    background: #131732;
+    background: rgba(19, 23, 50, 0.72);
     border: 1px solid #313962;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -908,14 +926,14 @@ nav.scrolled {
 }
 
 .payment-group {
-    background: rgba(14, 19, 43, 0.45);
+    background: rgba(14, 19, 43, 0.34);
     border: 1px solid #2f3660;
     border-radius: 12px;
     padding: 0.8rem;
 }
 
 .team-section {
-    background: rgba(14, 19, 43, 0.45);
+    background: rgba(14, 19, 43, 0.34);
     border: 1px solid #2f3660;
     border-radius: 12px;
     padding: 0.8rem;
@@ -950,7 +968,7 @@ nav.scrolled {
     gap: 0.55rem;
     padding: 0.65rem;
     border-radius: 10px;
-    background: rgba(10, 14, 33, 0.75);
+    background: rgba(10, 14, 33, 0.62);
     border: 1px dashed rgba(56, 249, 255, 0.45);
 }
 
@@ -1090,7 +1108,7 @@ nav.scrolled {
 }
 
 .recent-registrations li {
-    background: #151a34;
+    background: rgba(21, 26, 52, 0.72);
     border: 1px solid #2f3562;
     border-radius: 10px;
     padding: 0.55rem 0.7rem;
@@ -1145,7 +1163,7 @@ nav.scrolled {
 }
 
 .contact-item {
-    background: rgba(20, 24, 46, 0.7);
+    background: rgba(20, 24, 46, 0.55);
     border: 1px solid rgba(56, 249, 255, 0.24);
     border-radius: var(--radius-md);
     padding: clamp(0.85rem, 2vw, 1rem) clamp(0.75rem, 1.6vw, 0.9rem);
@@ -1213,7 +1231,7 @@ footer i {
    ============================================ */
 @media (max-width: 1080px) {
     .registration-container {
-        grid-template-columns: minmax(0, 1.2fr) minmax(260px, 1fr);
+        grid-template-columns: 1fr;
     }
 }
 
@@ -1308,6 +1326,11 @@ footer i {
         padding: 76px 5% 70px;
     }
 
+    .registration {
+        padding-left: 4%;
+        padding-right: 4%;
+    }
+
     .hero {
         padding-top: 128px;
     }
@@ -1357,6 +1380,13 @@ footer i {
 
     .form-container {
         padding: 0.95rem;
+    }
+
+    .form-grid,
+    .team-fields,
+    .events-layout,
+    .checkbox-group {
+        grid-template-columns: 1fr;
     }
 
     .form-group input,
@@ -1532,11 +1562,6 @@ footer i {
     .social-links a {
         width: 40px;
         height: 40px;
-    }
-
-    .registration {
-        padding-left: 4%;
-        padding-right: 4%;
     }
 
     .form-container {
