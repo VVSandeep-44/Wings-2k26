@@ -214,9 +214,7 @@ nav.scrolled {
     justify-content: center;
     text-align: center;
     padding: clamp(116px, 12vw, 140px) 20px clamp(68px, 8vw, 80px);
-    background:
-        linear-gradient(125deg, rgba(7, 8, 17, 0.5) 0%, rgba(17, 14, 42, 0.45) 48%, rgba(26, 17, 64, 0.5) 100%),
-        url('/assets/jpg%20wings.jpeg') center center / cover no-repeat;
+    background: linear-gradient(125deg, #070811 0%, #110e2a 48%, #1a1140 100%);
     overflow: hidden;
 }
 
@@ -230,6 +228,12 @@ nav.scrolled {
     z-index: 0;
     pointer-events: none;
     transform: translateZ(0);
+    opacity: 0;
+    transition: opacity 0.35s ease;
+}
+
+.hero-bg-video.ready {
+    opacity: 1;
 }
 
 .hero::before,
@@ -395,6 +399,7 @@ nav.scrolled {
     margin-bottom: clamp(1.2rem, 3.4vw, 2rem);
     opacity: 0.95;
 }
+
 
 .event-details {
     display: inline-grid;
@@ -616,6 +621,27 @@ nav.scrolled {
     background: linear-gradient(180deg, #090c1a 0%, #0f1328 100%);
 }
 
+.registration-deadline-inline {
+    width: min(100%, 860px);
+    margin: 0 auto 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    text-align: center;
+    padding: 0.6rem 0.9rem;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 209, 102, 0.48);
+    background: rgba(255, 209, 102, 0.12);
+    color: #ffe7a0;
+    font-size: clamp(0.9rem, 1.2vw, 0.98rem);
+    font-weight: 700;
+}
+
+.registration-deadline-inline i {
+    color: #ffd166;
+}
+
 .college-promo {
     max-width: 1120px;
     margin: 0 auto 1.2rem;
@@ -709,8 +735,7 @@ nav.scrolled {
     justify-items: center;
 }
 
-.form-container,
-.qr-container {
+.form-container {
     background: rgba(20, 23, 44, 0.72);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-soft);
@@ -859,6 +884,11 @@ nav.scrolled {
     gap: 0.35rem;
 }
 
+.event-option-wrap {
+    display: grid;
+    gap: 0.42rem;
+}
+
 .event-option {
     position: relative;
     display: block;
@@ -928,6 +958,124 @@ nav.scrolled {
     transform: translateY(-1px);
 }
 
+.event-details-btn {
+    justify-self: end;
+    border: 1px solid rgba(56, 249, 255, 0.46);
+    background: rgba(12, 18, 40, 0.85);
+    color: #dffbff;
+    border-radius: 9px;
+    padding: 0.36rem 0.62rem;
+    font-size: 0.74rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.2s ease, filter 0.2s ease;
+}
+
+.event-details-btn:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.05);
+}
+
+.technical-details-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1400;
+    display: grid;
+    place-items: center;
+    background: rgba(4, 8, 22, 0.68);
+    backdrop-filter: blur(6px);
+    padding: 1rem;
+}
+
+.technical-details-modal {
+    width: min(96vw, 620px);
+    background: rgba(14, 18, 39, 0.96);
+    border: 1px solid rgba(124, 77, 255, 0.35);
+    border-radius: 16px;
+    box-shadow: 0 16px 42px rgba(0, 0, 0, 0.45);
+    padding: clamp(0.95rem, 2.4vw, 1.25rem);
+    display: grid;
+    gap: 0.75rem;
+}
+
+.technical-details-modal h3 {
+    margin: 0;
+    font-size: clamp(1rem, 1.8vw, 1.15rem);
+    color: #f3edff;
+}
+
+.technical-details-modal p {
+    margin: 0;
+    color: #bcc6ed;
+    font-size: 0.88rem;
+}
+
+.technical-details-fields {
+    display: grid;
+    gap: 0.42rem;
+}
+
+.technical-details-fields label {
+    color: #ece6ff;
+    font-weight: 700;
+    font-size: 0.88rem;
+}
+
+.technical-details-fields input,
+.technical-details-fields textarea {
+    width: 100%;
+    border: 1px solid #30365e;
+    background: #121630;
+    color: var(--text);
+    border-radius: 11px;
+    padding: 0.7rem 0.78rem;
+    font-size: 0.95rem;
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.technical-details-fields input[type="file"] {
+    padding: 0.58rem 0.62rem;
+}
+
+.technical-details-fields textarea {
+    resize: vertical;
+    min-height: 120px;
+}
+
+.technical-details-fields small {
+    color: #aeb7e1;
+    font-size: 0.78rem;
+}
+
+.technical-details-fields input:focus,
+.technical-details-fields textarea:focus {
+    border-color: var(--neon-cyan);
+    box-shadow: 0 0 0 3px rgba(56, 249, 255, 0.2);
+}
+
+.technical-details-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.6rem;
+}
+
+.technical-details-actions .btn-secondary {
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(14, 18, 39, 0.82);
+    color: #dfe5ff;
+    border-radius: 11px;
+    padding: 0.6rem 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.technical-details-actions .submit-btn {
+    margin-top: 0;
+    box-shadow: none;
+    padding: 0.6rem 0.95rem;
+}
+
 .payment-group {
     background: rgba(14, 19, 43, 0.34);
     border: 1px solid #2f3660;
@@ -988,8 +1136,7 @@ nav.scrolled {
     border-radius: 10px;
 }
 
-.submit-btn,
-.download-btn {
+.submit-btn {
     border: none;
     cursor: pointer;
     border-radius: 12px;
@@ -1006,8 +1153,7 @@ nav.scrolled {
     box-shadow: 0 10px 20px rgba(255, 45, 149, 0.35);
 }
 
-.submit-btn:hover,
-.download-btn:hover {
+.submit-btn:hover {
     transform: translateY(-2px);
     filter: brightness(1.03);
 }
@@ -1025,64 +1171,6 @@ nav.scrolled {
 
 .form-status.error {
     color: #ff6d9f;
-}
-
-.qr-container {
-    text-align: center;
-    padding: clamp(1rem, 2vw, 1.6rem) clamp(0.9rem, 1.8vw, 1.2rem);
-    position: sticky;
-    top: 94px;
-}
-
-.qr-container h3 {
-    font-size: clamp(1.02rem, 1.6vw, 1.24rem);
-    color: #f4efff;
-    margin-bottom: 1rem;
-}
-
-.qr-container h3 i {
-    color: var(--accent);
-    margin-right: 6px;
-}
-
-#qrcode {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0.9rem;
-    background: #fff;
-    border-radius: 14px;
-    border: 2px solid rgba(56, 249, 255, 0.45);
-    box-shadow: 0 8px 22px rgba(15, 15, 26, 0.08);
-    margin-bottom: 1rem;
-}
-
-#qrcode img,
-#qrcode canvas {
-    display: block;
-    width: min(220px, 80vw);
-    height: auto;
-}
-
-.qr-container p {
-    color: #b7bee4;
-    font-size: clamp(0.88rem, 1vw, 0.95rem);
-    margin: 0.45rem 0;
-}
-
-.reg-id {
-    min-height: 28px;
-    font-weight: 700;
-    color: var(--neon-cyan);
-    font-size: clamp(0.86rem, 1vw, 0.95rem);
-}
-
-.download-btn {
-    margin-top: 0.65rem;
-    padding: clamp(10px, 1.3vw, 12px) clamp(12px, 1.8vw, 16px);
-    background: linear-gradient(135deg, #161a34, #23195b);
-    color: #fff;
-    box-shadow: 0 8px 18px rgba(26, 26, 46, 0.2);
 }
 
 .recent-registrations {
@@ -1244,12 +1332,7 @@ footer i {
         gap: 1rem;
     }
 
-    .qr-container {
-        display: none;
-    }
-
-    .form-container,
-    .qr-container {
+    .form-container {
         width: 100%;
     }
 
@@ -1335,7 +1418,40 @@ footer i {
     }
 
     .hero {
-        padding-top: 128px;
+        min-height: 100svh;
+        padding: 108px 14px 48px;
+    }
+
+    .hero::before,
+    .hero::after,
+    .hero-content::before,
+    .hero-content::after {
+        display: none;
+    }
+
+    .hero-content {
+        width: min(100%, 560px);
+        animation: none;
+    }
+
+    .hero h1 {
+        margin-bottom: 0.7rem;
+        letter-spacing: 3px;
+    }
+
+    .hero-title-image {
+        width: min(92vw, 520px);
+        max-height: 220px;
+    }
+
+    .hero-title-bottom {
+        letter-spacing: 0.12rem;
+        padding: 0.22rem 0.56rem;
+    }
+
+    .hero .tagline {
+        font-size: clamp(1rem, 4vw, 1.25rem);
+        margin-bottom: 0.95rem;
     }
 
     .mid-sections-bg::before {
@@ -1354,35 +1470,44 @@ footer i {
     }
 
     .event-details {
-        width: min(92vw, 470px);
-        padding: 1.1rem;
+        width: min(94vw, 480px);
+        padding: 0.82rem 0.92rem;
+        gap: 0.6rem;
     }
 
     .event-details p {
         justify-content: flex-start;
-        font-size: 0.98rem;
+        font-size: 0.9rem;
+        gap: 8px;
     }
 
     .countdown {
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-        width: min(96vw, 520px);
-        gap: 0.45rem;
+        grid-template-columns: repeat(4, minmax(64px, 1fr));
+        width: min(96vw, 420px);
+        gap: 0.35rem;
     }
 
     .countdown-item {
-        padding: 0.55rem 0.3rem;
+        padding: 0.48rem 0.25rem;
     }
 
     .countdown-item span {
-        font-size: 1rem;
+        font-size: 0.92rem;
     }
 
     .countdown-item small {
-        font-size: 0.62rem;
+        font-size: 0.58rem;
     }
 
     .form-container {
         padding: 0.95rem;
+    }
+
+    .registration-deadline-inline {
+        width: min(100%, 860px);
+        margin-bottom: 0.85rem;
+        padding: 0.52rem 0.72rem;
+        border-radius: 10px;
     }
 
     .form-grid,
@@ -1398,18 +1523,8 @@ footer i {
     }
 
     .submit-btn,
-    .download-btn {
+    .form-container button[type='submit'] {
         width: 100%;
-    }
-
-    .checkbox-group {
-        grid-template-columns: repeat(2, minmax(130px, 1fr));
-        padding: 0.7rem;
-    }
-
-    .events-layout {
-        grid-template-columns: 1fr 1fr;
-        gap: 0.8rem;
     }
 
     .event-option span {
@@ -1484,6 +1599,21 @@ footer i {
         margin-top: 0.2rem;
     }
 
+    .technical-details-modal {
+        width: min(96vw, 520px);
+        border-radius: 14px;
+    }
+
+    .technical-details-actions {
+        flex-direction: column-reverse;
+        align-items: stretch;
+    }
+
+    .technical-details-actions .btn-secondary,
+    .technical-details-actions .submit-btn {
+        width: 100%;
+    }
+
     .payment-accordion .payment-group {
         border: 0;
         background: transparent;
@@ -1492,6 +1622,24 @@ footer i {
 }
 
 @media (max-width: 560px) {
+    .hero {
+        padding-top: 100px;
+        padding-bottom: 40px;
+    }
+
+    .hero-title-image {
+        width: min(94vw, 420px);
+        max-height: 180px;
+    }
+
+    .event-details p {
+        font-size: 0.86rem;
+    }
+
+    .countdown {
+        width: min(97vw, 360px);
+    }
+
     .form-grid {
         grid-template-columns: 1fr;
     }
@@ -1543,7 +1691,7 @@ footer i {
 
 @media (max-width: 480px) {
     .hero h1 {
-        letter-spacing: 2px;
+        letter-spacing: 1.5px;
     }
 
     .cta-button {
@@ -1557,9 +1705,9 @@ footer i {
     }
 
     .countdown {
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-        width: min(96vw, 520px);
-        gap: 0.4rem;
+        grid-template-columns: repeat(2, minmax(92px, 1fr));
+        width: min(96vw, 300px);
+        gap: 0.32rem;
     }
 
     .social-links a {

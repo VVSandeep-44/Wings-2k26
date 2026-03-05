@@ -4,6 +4,7 @@ import {
     checkAdminSession,
     fetchRegistrations,
     deleteRegistration as deleteRegistrationApi,
+    updateRegistrationPaymentStatus,
     adminLogout,
 } from '../services/api';
 import '../styles/admin.css';
@@ -34,6 +35,7 @@ const EVENT_OPTIONS = [
     { value: 'circuitry', label: 'Circuitry' },
     { value: 'robotics', label: 'Robotics' },
     { value: 'web-planting-ai', label: 'Web Planting with AI' },
+    { value: 'project-expo', label: 'Project Expo' },
     { value: 'techno-quiz', label: 'Techno Quiz' },
     { value: 'debugging', label: 'Debugging Events' },
     { value: 'startup-pitching', label: 'Startup Idea Pitching' },
@@ -48,6 +50,20 @@ const EVENT_LABEL_MAP = Object.fromEntries(
 );
 
 const formatEventName = (value) => EVENT_LABEL_MAP[value] || value || '-';
+
+const sortByRegistrationTimeDesc = (rows) =>
+    [...rows].sort((a, b) => {
+        const timeA = new Date(a?.createdAt || 0).getTime();
+        const timeB = new Date(b?.createdAt || 0).getTime();
+        return (Number.isFinite(timeB) ? timeB : 0) - (Number.isFinite(timeA) ? timeA : 0);
+    });
+
+const sortByRegistrationTimeAsc = (rows) =>
+    [...rows].sort((a, b) => {
+        const timeA = new Date(a?.createdAt || 0).getTime();
+        const timeB = new Date(b?.createdAt || 0).getTime();
+        return (Number.isFinite(timeA) ? timeA : 0) - (Number.isFinite(timeB) ? timeB : 0);
+    });
 
 const buildCsv = (rows) => {
     const headers = [
@@ -77,6 +93,38 @@ const buildCsv = (rows) => {
     return lines.join('\n');
 };
 
+const buildSingleRegistrationResponseJson = (row) =>
+    JSON.stringify(
+        {
+            name: row?.name || '',
+            email: row?.email || '',
+            phone: row?.phone || '',
+            college: row?.college || '',
+            department: row?.department || '',
+            year: row?.year || '',
+            events: Array.isArray(row?.events) ? row.events : [],
+            eventDetails:
+                row?.eventDetails && typeof row.eventDetails === 'object'
+                    ? row.eventDetails
+                    : {},
+            regId: row?.regId || '',
+            participationType: row?.participationType || 'individual',
+            teamName: row?.teamName || '',
+            teamMembers: Array.isArray(row?.teamMembers) ? row.teamMembers : [],
+            paymentReference: row?.paymentReference || '',
+            paymentStatus: row?.paymentStatus || 'submitted',
+            paymentVerifiedBy: row?.paymentVerifiedBy || '',
+            paymentVerifiedAt: row?.paymentVerifiedAt || null,
+            validationStatus: row?.validationStatus || 'pending',
+            invitationStatus: row?.invitationStatus || 'queued',
+            validationMessage: row?.validationMessage || '',
+            createdAt: row?.createdAt || null,
+            createdAtFormatted: formatDate(row?.createdAt),
+        },
+        null,
+        2
+    );
+
 const downloadFile = (content, filename, mimeType) => {
     const blob = new Blob([content], { type: mimeType });
     const url = URL.createObjectURL(blob);
@@ -94,9 +142,12 @@ export default function AdminDashboardPage() {
     const [statusType, setStatusType] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
     const [eventFilter, setEventFilter] = useState('all');
+    const [sortOrder, setSortOrder] = useState('newest');
     const [limit, setLimit] = useState(20);
     const [menuOpen, setMenuOpen] = useState(false);
     const [deletingId, setDeletingId] = useState(null);
+    const [paymentUpdatingId, setPaymentUpdatingId] = useState(null);
+    const [selectedRegistration, setSelectedRegistration] = useState(null);
     const navigate = useNavigate();
 
     const setStatus = (message, type = '') => {
@@ -105,9 +156,14 @@ export default function AdminDashboardPage() {
     };
 
     const applyFilters = useCallback(
-        (data, query, selectedEvent) => {
+        (data, query, selectedEvent, selectedSortOrder = 'newest') => {
+            const sourceData = Array.isArray(data) ? data : [];
+            const sortedData =
+                selectedSortOrder === 'oldest'
+                    ? sortByRegistrationTimeAsc(sourceData)
+                    : sortByRegistrationTimeDesc(sourceData);
             const q = query.trim().toLowerCase();
-            const filtered = data.filter((row) => {
+            const filtered = sortedData.filter((row) => {
                 const events = Array.isArray(row.events) ? row.events : [];
                 const eventMatches = selectedEvent === 'all' || events.includes(selectedEvent);
                 if (!eventMatches) return false;
@@ -119,8 +175,8 @@ export default function AdminDashboardPage() {
                 return searchable.includes(q);
             });
             setFilteredRegistrations(filtered);
-            if (data.length > 0) {
-                setStatus(`Showing ${filtered.length} of ${data.length} registration(s).`, 'ok');
+            if (sortedData.length > 0) {
+                setStatus(`Showing ${filtered.length} of ${sortedData.length} registration(s).`, 'ok');
             }
         },
         []
@@ -135,7 +191,7 @@ export default function AdminDashboardPage() {
         setStatus('Loading registrations...');
         try {
             const result = await fetchRegistrations(currentLimit);
-            const data = result.data || [];
+            const data = sortByRegistrationTimeDesc(result.data || []);
             setAllRegistrations(data);
             setStatus(`Loaded ${result.count} registration(s).`, 'ok');
             return data;
@@ -155,25 +211,36 @@ export default function AdminDashboardPage() {
                 return;
             }
             const data = await loadRegistrations(limit);
-            if (data) applyFilters(data, searchQuery, eventFilter);
+            if (data) applyFilters(data, searchQuery, eventFilter, sortOrder);
         };
         init();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     useEffect(() => {
-        applyFilters(allRegistrations, searchQuery, eventFilter);
-    }, [searchQuery, eventFilter, allRegistrations, applyFilters]);
+        applyFilters(allRegistrations, searchQuery, eventFilter, sortOrder);
+    }, [searchQuery, eventFilter, sortOrder, allRegistrations, applyFilters]);
+
+    useEffect(() => {
+        if (!selectedRegistration) return;
+        const selectedKey = selectedRegistration.id || selectedRegistration.regId;
+        const stillExists = filteredRegistrations.some(
+            (item) => (item.id || item.regId) === selectedKey
+        );
+        if (!stillExists) {
+            setSelectedRegistration(null);
+        }
+    }, [filteredRegistrations, selectedRegistration]);
 
     const handleRefresh = async () => {
         const data = await loadRegistrations(limit);
-        if (data) applyFilters(data, searchQuery, eventFilter);
+        if (data) applyFilters(data, searchQuery, eventFilter, sortOrder);
     };
 
     const handleLimitChange = async (newLimit) => {
         setLimit(newLimit);
         const data = await loadRegistrations(newLimit);
-        if (data) applyFilters(data, searchQuery, eventFilter);
+        if (data) applyFilters(data, searchQuery, eventFilter, sortOrder);
     };
 
     const handleDelete = async (id, name) => {
@@ -196,13 +263,62 @@ export default function AdminDashboardPage() {
         }
     };
 
+    const handleViewDetails = (row) => {
+        setSelectedRegistration(row);
+        setStatus(`Viewing details for ${row?.name || row?.regId || 'selected registrant'}.`, 'ok');
+    };
+
+    const handleDownloadSingleResponse = (row) => {
+        if (!row) {
+            setStatus('Select a registration first.', 'err');
+            return;
+        }
+
+        const safeId = String(row.regId || row.name || 'registrant')
+            .trim()
+            .replace(/[^a-zA-Z0-9-_]+/g, '-');
+        const stamp = new Date().toISOString().slice(0, 10);
+        const jsonContent = buildSingleRegistrationResponseJson(row);
+        downloadFile(
+            jsonContent,
+            `wings-registration-response-${safeId}-${stamp}.json`,
+            'application/json;charset=utf-8;'
+        );
+        setStatus('Selected registration response downloaded.', 'ok');
+    };
+
+    const handlePaymentStatusUpdate = async (row, paymentStatus) => {
+        if (!row?.id) {
+            setStatus('Unable to update payment status for this record.', 'err');
+            return;
+        }
+
+        setPaymentUpdatingId(row.id);
+        setStatus(`Updating payment status to ${paymentStatus}...`);
+
+        try {
+            await updateRegistrationPaymentStatus(row.id, paymentStatus, 'admin');
+            const data = await loadRegistrations(limit);
+            if (data) {
+                applyFilters(data, searchQuery, eventFilter, sortOrder);
+                const updatedRow = data.find((item) => item.id === row.id) || null;
+                setSelectedRegistration(updatedRow);
+            }
+            setStatus(`Payment marked as ${paymentStatus}.`, 'ok');
+        } catch (error) {
+            setStatus(error.message || 'Could not update payment status.', 'err');
+        } finally {
+            setPaymentUpdatingId(null);
+        }
+    };
+
     const handleExport = (type) => {
         if (!filteredRegistrations.length) {
             setStatus('Load registrations before exporting.', 'err');
             return;
         }
-        const csvContent = buildCsv(filteredRegistrations);
         const stamp = new Date().toISOString().slice(0, 10);
+        const csvContent = buildCsv(filteredRegistrations);
         if (type === 'excel') {
             downloadFile(csvContent, `wings-registrations-${stamp}.xls`, 'application/vnd.ms-excel;charset=utf-8;');
             setStatus('Excel export downloaded.', 'ok');
@@ -281,6 +397,14 @@ export default function AdminDashboardPage() {
                                     <option value={50}>Last 50</option>
                                     <option value={100}>Last 100</option>
                                 </select>
+                                <select
+                                    id="sortOrder"
+                                    value={sortOrder}
+                                    onChange={(e) => setSortOrder(e.target.value)}
+                                >
+                                    <option value="newest">Newest First</option>
+                                    <option value="oldest">Oldest First</option>
+                                </select>
                                 <button id="refreshBtn" onClick={handleRefresh}>
                                     Refresh Data
                                 </button>
@@ -308,6 +432,108 @@ export default function AdminDashboardPage() {
                     <div id="status" className={`status ${statusType}`}>
                         {statusMessage}
                     </div>
+
+                    {selectedRegistration && (
+                        <div className="selected-response-panel">
+                            <div className="selected-response-head">
+                                <h3>Registrant Details</h3>
+                                <div className="selected-response-actions">
+                                    <button
+                                        type="button"
+                                        className="btn-secondary"
+                                        onClick={() => handleDownloadSingleResponse(selectedRegistration)}
+                                    >
+                                        Download This Response
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className="btn-secondary"
+                                        onClick={() => setSelectedRegistration(null)}
+                                    >
+                                        Close
+                                    </button>
+                                </div>
+                            </div>
+                            <div className="selected-response-grid">
+                                <div><strong>Name:</strong> {selectedRegistration.name || '-'}</div>
+                                <div><strong>Reg ID:</strong> {selectedRegistration.regId || '-'}</div>
+                                <div><strong>Email:</strong> {selectedRegistration.email || '-'}</div>
+                                <div><strong>Phone:</strong> {selectedRegistration.phone || '-'}</div>
+                                <div><strong>College:</strong> {selectedRegistration.college || '-'}</div>
+                                <div><strong>Department / Year:</strong> {selectedRegistration.department || '-'} / {selectedRegistration.year || '-'}</div>
+                                <div><strong>Participation:</strong> {selectedRegistration.participationType || 'individual'}</div>
+                                <div><strong>Team Name:</strong> {selectedRegistration.teamName || '-'}</div>
+                                <div className="full"><strong>Team Members:</strong> {(selectedRegistration.teamMembers || []).join(', ') || '-'}</div>
+                                <div className="full"><strong>Events:</strong> {(selectedRegistration.events || []).map((event) => formatEventName(event)).join(', ') || '-'}</div>
+                                <div className="full">
+                                    <strong>Technical Event Details:</strong>{' '}
+                                    {Object.keys(selectedRegistration.eventDetails || {}).length === 0 ? (
+                                        '-'
+                                    ) : (
+                                        <div className="meta event-details-list">
+                                            {Object.entries(selectedRegistration.eventDetails || {}).map(([eventKey, details]) => (
+                                                <div key={eventKey} className="event-details-item">
+                                                    <div>
+                                                        <strong>{formatEventName(eventKey)}:</strong>
+                                                    </div>
+                                                    <div>Topic: {details?.topic || '-'}</div>
+                                                    <div>
+                                                        Abstract PDF: {details?.abstractPdfName || details?.abstract ? (details?.abstractPdfName || 'Uploaded') : '-'}
+                                                    </div>
+                                                    {details?.abstractPdfDataUrl ? (
+                                                        <div>
+                                                            <a
+                                                                href={details.abstractPdfDataUrl}
+                                                                target="_blank"
+                                                                rel="noreferrer"
+                                                                className="event-details-pdf-link"
+                                                            >
+                                                                View PDF
+                                                            </a>
+                                                        </div>
+                                                    ) : null}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                                <div><strong>Payment Ref:</strong> {selectedRegistration.paymentReference || '-'}</div>
+                                <div><strong>Payment Status:</strong> {selectedRegistration.paymentStatus || 'submitted'}</div>
+                                <div><strong>Payment Verified By:</strong> {selectedRegistration.paymentVerifiedBy || '-'}</div>
+                                <div><strong>Payment Verified At:</strong> {formatDate(selectedRegistration.paymentVerifiedAt)}</div>
+                                <div><strong>Validation:</strong> {selectedRegistration.validationStatus || 'pending'}</div>
+                                <div><strong>Invite:</strong> {selectedRegistration.invitationStatus || 'queued'}</div>
+                                <div className="full"><strong>Validation Message:</strong> {selectedRegistration.validationMessage || '-'}</div>
+                                <div className="full"><strong>Created At:</strong> {formatDate(selectedRegistration.createdAt)}</div>
+                                <div className="full response-payment-actions">
+                                    <button
+                                        type="button"
+                                        className="btn-secondary"
+                                        disabled={paymentUpdatingId === selectedRegistration.id}
+                                        onClick={() => handlePaymentStatusUpdate(selectedRegistration, 'verified')}
+                                    >
+                                        {paymentUpdatingId === selectedRegistration.id ? 'Updating...' : 'Mark Verified'}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className="btn-secondary"
+                                        disabled={paymentUpdatingId === selectedRegistration.id}
+                                        onClick={() => handlePaymentStatusUpdate(selectedRegistration, 'failed')}
+                                    >
+                                        Mark Failed
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className="btn-secondary"
+                                        disabled={paymentUpdatingId === selectedRegistration.id}
+                                        onClick={() => handlePaymentStatusUpdate(selectedRegistration, 'pending')}
+                                    >
+                                        Reset Pending
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     <div className="table-wrap">
                         <table>
@@ -387,13 +613,22 @@ export default function AdminDashboardPage() {
                                             </td>
                                             <td data-label="Created">{formatDate(row.createdAt)}</td>
                                             <td data-label="Actions">
-                                                <button
-                                                    className="delete-btn"
-                                                    disabled={deletingId === row.id}
-                                                    onClick={() => handleDelete(row.id, row.name)}
-                                                >
-                                                    {deletingId === row.id ? 'Deleting...' : 'Delete'}
-                                                </button>
+                                                <div className="row-actions">
+                                                    <button
+                                                        type="button"
+                                                        className="btn-secondary view-btn"
+                                                        onClick={() => handleViewDetails(row)}
+                                                    >
+                                                        View
+                                                    </button>
+                                                    <button
+                                                        className="delete-btn"
+                                                        disabled={deletingId === row.id}
+                                                        onClick={() => handleDelete(row.id, row.name)}
+                                                    >
+                                                        {deletingId === row.id ? 'Deleting...' : 'Delete'}
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     ))

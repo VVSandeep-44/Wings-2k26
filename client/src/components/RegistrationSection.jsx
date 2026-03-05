@@ -10,6 +10,7 @@ const REGISTRATION_FEE_TEXT = '₹300';
 const MAX_EVENTS = 2;
 
 const technicalEvents = [
+    { value: 'project-expo', label: 'Project Expo', description: 'Showcase your innovative project and explain its impact.' },
     { value: 'circuitry', label: 'Circuitry', description: 'Design and troubleshoot practical circuits.' },
     { value: 'robotics', label: 'Robotics', description: 'Build and control bots in task rounds.' },
     { value: 'web-planting-ai', label: 'Web Planting with AI', description: 'Create web solutions with AI workflows.' },
@@ -18,6 +19,17 @@ const technicalEvents = [
     { value: 'startup-pitching', label: 'Startup Idea Pitching', description: 'Pitch startup ideas to judges.' },
     { value: 'paper-presentations', label: 'Paper Presentations (PPT)', description: 'Present technical ideas with PPT.' },
 ];
+
+const TECHNICAL_EVENT_VALUES = new Set(technicalEvents.map((event) => event.value));
+const TECHNICAL_EVENT_LABELS = Object.fromEntries(
+    technicalEvents.map((event) => [event.value, event.label])
+);
+const TECHNICAL_EVENTS_REQUIRING_DETAILS = new Set([
+    'project-expo',
+    'startup-pitching',
+    'paper-presentations',
+]);
+const MAX_ABSTRACT_PDF_SIZE_MB = 5;
 
 const nonTechnicalEvents = [
     { value: 'short-film', label: 'Short Film Making', description: 'Create and present a short story film.' },
@@ -57,6 +69,8 @@ export default function RegistrationSection() {
         paymentReference: '',
     });
     const [selectedEvents, setSelectedEvents] = useState([]);
+    const [technicalEventDetails, setTechnicalEventDetails] = useState({});
+    const [activeTechnicalEvent, setActiveTechnicalEvent] = useState('');
     const [statusMessage, setStatusMessage] = useState('');
     const [statusType, setStatusType] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -68,18 +82,141 @@ export default function RegistrationSection() {
         setFormData((prev) => ({ ...prev, [name]: value }));
     };
 
+    const isTechnicalEvent = (eventValue) => TECHNICAL_EVENT_VALUES.has(eventValue);
+    const isTechnicalEventDetailsRequired = (eventValue) =>
+        TECHNICAL_EVENTS_REQUIRING_DETAILS.has(eventValue);
+
+    const hasRequiredTechnicalDetails = (eventValue) => {
+        const details = technicalEventDetails[eventValue];
+        if (!details) return false;
+        return Boolean(details.topic?.trim()) && Boolean(details.abstractPdfDataUrl?.trim());
+    };
+
+    const getTechnicalEventLabel = (eventValue) =>
+        TECHNICAL_EVENT_LABELS[eventValue] || eventValue;
+
     const handleEventToggle = (eventValue) => {
-        setSelectedEvents((prev) => {
-            if (prev.includes(eventValue)) {
-                return prev.filter((event) => event !== eventValue);
-            }
+        const alreadySelected = selectedEvents.includes(eventValue);
 
-            if (prev.length >= MAX_EVENTS) {
-                return prev;
+        if (alreadySelected) {
+            setSelectedEvents((prev) => prev.filter((event) => event !== eventValue));
+            if (isTechnicalEvent(eventValue)) {
+                setTechnicalEventDetails((prev) => {
+                    const next = { ...prev };
+                    delete next[eventValue];
+                    return next;
+                });
+                if (activeTechnicalEvent === eventValue) {
+                    setActiveTechnicalEvent('');
+                }
             }
+            return;
+        }
 
-            return [...prev, eventValue];
+        if (selectedEvents.length >= MAX_EVENTS) {
+            setStatusMessage(`You can select up to ${MAX_EVENTS} events only.`);
+            setStatusType('error');
+            return;
+        }
+
+        setSelectedEvents((prev) => [...prev, eventValue]);
+        if (isTechnicalEventDetailsRequired(eventValue)) {
+            setActiveTechnicalEvent(eventValue);
+        }
+    };
+
+    const handleOpenTechnicalDetails = (eventValue) => {
+        if (!isTechnicalEventDetailsRequired(eventValue)) return;
+        setActiveTechnicalEvent(eventValue);
+    };
+
+    const handleTechnicalDetailsChange = (field, value) => {
+        if (!activeTechnicalEvent) return;
+        setTechnicalEventDetails((prev) => {
+            const existing = prev[activeTechnicalEvent] || {
+                topic: '',
+                abstractPdfName: '',
+                abstractPdfDataUrl: '',
+            };
+            return {
+                ...prev,
+                [activeTechnicalEvent]: {
+                    ...existing,
+                    [field]: value,
+                },
+            };
         });
+    };
+
+    const handleTechnicalAbstractFileChange = (e) => {
+        if (!activeTechnicalEvent) return;
+
+        const file = e.target.files?.[0];
+        if (!file) {
+            handleTechnicalDetailsChange('abstractPdfName', '');
+            handleTechnicalDetailsChange('abstractPdfDataUrl', '');
+            return;
+        }
+
+        if (file.type !== 'application/pdf') {
+            setStatusMessage('Please upload abstract in PDF format only.');
+            setStatusType('error');
+            e.target.value = '';
+            return;
+        }
+
+        const maxBytes = MAX_ABSTRACT_PDF_SIZE_MB * 1024 * 1024;
+        if (file.size > maxBytes) {
+            setStatusMessage(`Abstract PDF must be ${MAX_ABSTRACT_PDF_SIZE_MB} MB or smaller.`);
+            setStatusType('error');
+            e.target.value = '';
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = () => {
+            const dataUrl = typeof reader.result === 'string' ? reader.result : '';
+            handleTechnicalDetailsChange('abstractPdfName', file.name);
+            handleTechnicalDetailsChange('abstractPdfDataUrl', dataUrl);
+            setStatusMessage('Abstract PDF attached successfully.');
+            setStatusType('success');
+        };
+        reader.onerror = () => {
+            setStatusMessage('Unable to read the selected PDF. Please try again.');
+            setStatusType('error');
+        };
+        reader.readAsDataURL(file);
+    };
+
+    const handleSaveTechnicalDetails = () => {
+        if (!activeTechnicalEvent) return;
+        const details = technicalEventDetails[activeTechnicalEvent] || {
+            topic: '',
+            abstractPdfName: '',
+            abstractPdfDataUrl: '',
+        };
+        if (!details.topic.trim() || !details.abstractPdfDataUrl.trim()) {
+            setStatusMessage('Please provide both Topic and Abstract PDF for the selected technical event.');
+            setStatusType('error');
+            return;
+        }
+        setStatusMessage(`${getTechnicalEventLabel(activeTechnicalEvent)} details saved.`);
+        setStatusType('success');
+        setActiveTechnicalEvent('');
+    };
+
+    const handleCancelTechnicalDetails = () => {
+        if (!activeTechnicalEvent) return;
+        const eventToRemove = activeTechnicalEvent;
+        setSelectedEvents((prev) => prev.filter((event) => event !== eventToRemove));
+        setTechnicalEventDetails((prev) => {
+            const next = { ...prev };
+            delete next[eventToRemove];
+            return next;
+        });
+        setActiveTechnicalEvent('');
+        setStatusMessage(`${getTechnicalEventLabel(eventToRemove)} was removed from selected events.`);
+        setStatusType('error');
     };
 
     const handleFormFocus = () => {
@@ -101,6 +238,23 @@ export default function RegistrationSection() {
         if (selectedEvents.length === 0) {
             setStatusMessage('Please select at least one event.');
             setStatusType('error');
+            return;
+        }
+
+        const selectedTechnicalEvents = selectedEvents.filter((eventValue) =>
+            isTechnicalEventDetailsRequired(eventValue)
+        );
+        const missingTechnicalDetails = selectedTechnicalEvents.filter(
+            (eventValue) => !hasRequiredTechnicalDetails(eventValue)
+        );
+
+        if (missingTechnicalDetails.length > 0) {
+            const firstMissing = missingTechnicalDetails[0];
+            setStatusMessage(
+                `Please add Topic and Abstract PDF for ${getTechnicalEventLabel(firstMissing)}.`
+            );
+            setStatusType('error');
+            setActiveTechnicalEvent(firstMissing);
             return;
         }
 
@@ -131,6 +285,20 @@ export default function RegistrationSection() {
         const newRegId =
             'WINGS2026-' + Math.random().toString(36).substring(2, 11).toUpperCase();
 
+        const eventDetailsPayload = selectedTechnicalEvents.reduce((acc, eventValue) => {
+            const details = technicalEventDetails[eventValue] || {
+                topic: '',
+                abstractPdfName: '',
+                abstractPdfDataUrl: '',
+            };
+            acc[eventValue] = {
+                topic: details.topic.trim(),
+                abstractPdfName: details.abstractPdfName || '',
+                abstractPdfDataUrl: details.abstractPdfDataUrl || '',
+            };
+            return acc;
+        }, {});
+
         const payload = {
             name: formData.name.trim(),
             email: formData.email.trim(),
@@ -148,6 +316,7 @@ export default function RegistrationSection() {
                         .slice(0, 3)
                     : [formData.name.trim()],
             paymentReference: formData.paymentReference.trim(),
+            eventDetails: eventDetailsPayload,
             regId: newRegId,
             createdAt: new Date().toISOString(),
         };
@@ -188,6 +357,8 @@ export default function RegistrationSection() {
                 paymentReference: '',
             });
             setSelectedEvents([]);
+            setTechnicalEventDetails({});
+            setActiveTechnicalEvent('');
         } catch (error) {
             setStatusMessage(error.message || 'Registration failed');
             setStatusType('error');
@@ -199,6 +370,64 @@ export default function RegistrationSection() {
 
     return (
         <>
+            {activeTechnicalEvent && isTechnicalEventDetailsRequired(activeTechnicalEvent) ? (
+                <div className="technical-details-modal-overlay" role="presentation">
+                    <div
+                        className="technical-details-modal"
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="technicalDetailsTitle"
+                    >
+                        <h3 id="technicalDetailsTitle">{getTechnicalEventLabel(activeTechnicalEvent)} Details</h3>
+                        <p>
+                            Please provide the required details for this technical event submission.
+                        </p>
+
+                        <div className="technical-details-fields">
+                            <label htmlFor="technicalEventTopic">Topic Chosen *</label>
+                            <input
+                                id="technicalEventTopic"
+                                type="text"
+                                placeholder="Enter your topic"
+                                value={technicalEventDetails[activeTechnicalEvent]?.topic || ''}
+                                onChange={(e) => handleTechnicalDetailsChange('topic', e.target.value)}
+                            />
+
+                            <label htmlFor="technicalEventAbstractPdf">Abstract PDF *</label>
+                            <input
+                                id="technicalEventAbstractPdf"
+                                type="file"
+                                accept="application/pdf"
+                                onChange={handleTechnicalAbstractFileChange}
+                            />
+                            <small>
+                                Upload a PDF file (max {MAX_ABSTRACT_PDF_SIZE_MB} MB).
+                                {technicalEventDetails[activeTechnicalEvent]?.abstractPdfName
+                                    ? ` Selected: ${technicalEventDetails[activeTechnicalEvent].abstractPdfName}`
+                                    : ''}
+                            </small>
+                        </div>
+
+                        <div className="technical-details-actions">
+                            <button
+                                type="button"
+                                className="btn-secondary"
+                                onClick={handleCancelTechnicalDetails}
+                            >
+                                Cancel Event
+                            </button>
+                            <button
+                                type="button"
+                                className="submit-btn"
+                                onClick={handleSaveTechnicalDetails}
+                            >
+                                Save Details
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            ) : null}
+
             {showBanner && (
                 <div
                     className="server-wakeup-banner visible"
@@ -211,6 +440,9 @@ export default function RegistrationSection() {
 
             <section className="registration" id="register">
                 <h2 className="section-title">Register for WINGS 2k26</h2>
+                <div className="registration-deadline-inline" role="note" aria-label="Registration deadline notice">
+                    <i className="fas fa-clock"></i> Registration closes on 11th March,2026 at 5PM.
+                </div>
 
                 <div className="registration-container">
                     {/* Registration Form */}
@@ -321,20 +553,33 @@ export default function RegistrationSection() {
                                             </summary>
                                             <div className="event-list">
                                                 {technicalEvents.map((evt) => (
-                                                    <label className="event-option" key={evt.value}>
-                                                        <input
-                                                            type="checkbox"
-                                                            name="events"
-                                                            value={evt.value}
-                                                            checked={selectedEvents.includes(evt.value)}
-                                                            disabled={!selectedEvents.includes(evt.value) && selectedEvents.length >= MAX_EVENTS}
-                                                            onChange={() => handleEventToggle(evt.value)}
-                                                        />
-                                                        <span>
-                                                            <strong>{evt.label}</strong>
-                                                            {evt.description ? <small>{evt.description}</small> : null}
-                                                        </span>
-                                                    </label>
+                                                    <div className="event-option-wrap" key={evt.value}>
+                                                        <label className="event-option">
+                                                            <input
+                                                                type="checkbox"
+                                                                name="events"
+                                                                value={evt.value}
+                                                                checked={selectedEvents.includes(evt.value)}
+                                                                disabled={!selectedEvents.includes(evt.value) && selectedEvents.length >= MAX_EVENTS}
+                                                                onChange={() => handleEventToggle(evt.value)}
+                                                            />
+                                                            <span>
+                                                                <strong>{evt.label}</strong>
+                                                                {evt.description ? <small>{evt.description}</small> : null}
+                                                            </span>
+                                                        </label>
+                                                        {selectedEvents.includes(evt.value) && isTechnicalEventDetailsRequired(evt.value) ? (
+                                                            <button
+                                                                type="button"
+                                                                className="event-details-btn"
+                                                                onClick={() => handleOpenTechnicalDetails(evt.value)}
+                                                            >
+                                                                {hasRequiredTechnicalDetails(evt.value)
+                                                                    ? 'Edit Details'
+                                                                    : 'Add Details'}
+                                                            </button>
+                                                        ) : null}
+                                                    </div>
                                                 ))}
                                             </div>
                                         </details>

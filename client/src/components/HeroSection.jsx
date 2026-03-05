@@ -5,6 +5,7 @@ const EVENT_START_DATE = '2026-03-13T09:00:00+05:30';
 export default function HeroSection() {
     const [timeLeft, setTimeLeft] = useState({ days: '00', hours: '00', minutes: '00', seconds: '00' });
     const [isLive, setIsLive] = useState(false);
+    const [isVideoReady, setIsVideoReady] = useState(false);
 
     useEffect(() => {
         const eventDate = new Date(EVENT_START_DATE).getTime();
@@ -34,14 +35,14 @@ export default function HeroSection() {
     return (
         <section className="hero" id="home">
             <video
-                className="hero-bg-video"
+                className={`hero-bg-video${isVideoReady ? ' ready' : ''}`}
                 autoPlay
                 loop
                 muted
                 playsInline
                 preload="metadata"
-                poster="/assets/jpg wings.jpeg"
                 aria-hidden="true"
+                onCanPlay={() => setIsVideoReady(true)}
             >
                 <source src="/assets/herobg.optimized.mp4" type="video/mp4" />
             </video>

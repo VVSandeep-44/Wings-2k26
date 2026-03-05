@@ -313,6 +313,58 @@ const requiredFields = [
   "createdAt",
 ];
 
+const TECHNICAL_EVENTS = new Set([
+  "project-expo",
+  "circuitry",
+  "robotics",
+  "web-planting-ai",
+  "techno-quiz",
+  "debugging",
+  "startup-pitching",
+  "paper-presentations",
+]);
+
+const TECHNICAL_EVENTS_REQUIRING_DETAILS = new Set([
+  "project-expo",
+  "startup-pitching",
+  "paper-presentations",
+]);
+
+const normalizeEventDetails = (rawDetails, selectedEvents) => {
+  if (!rawDetails || typeof rawDetails !== "object" || Array.isArray(rawDetails)) {
+    return {};
+  }
+
+  const normalized = {};
+  selectedEvents.forEach((event) => {
+    if (!TECHNICAL_EVENTS.has(event)) {
+      return;
+    }
+
+    const details = rawDetails[event];
+    if (!details || typeof details !== "object" || Array.isArray(details)) {
+      return;
+    }
+
+    const topic = String(details.topic || "").trim();
+    const abstract = String(details.abstract || "").trim();
+    const abstractPdfName = String(details.abstractPdfName || "").trim();
+    const abstractPdfDataUrl = String(details.abstractPdfDataUrl || "").trim();
+    const hasPdfData = abstractPdfDataUrl.startsWith("data:application/pdf;base64,");
+
+    if (topic || abstract || abstractPdfName || hasPdfData) {
+      normalized[event] = {
+        topic,
+        abstract,
+        abstractPdfName,
+        abstractPdfDataUrl: hasPdfData ? abstractPdfDataUrl : "",
+      };
+    }
+  });
+
+  return normalized;
+};
+
 const normalizePhone = (phone) => String(phone || "").replace(/[\s-]/g, "").trim();
 
 const validateEmailInBackground = async (email) => {
@@ -692,6 +744,22 @@ app.post("/api/register", async (req, res) => {
       .map((entry) => entry.trim())
       .filter(Boolean);
 
+  const eventDetails = normalizeEventDetails(payload.eventDetails, eventsArray);
+  const technicalEventsSelected = eventsArray.filter((event) =>
+    TECHNICAL_EVENTS_REQUIRING_DETAILS.has(event)
+  );
+  const missingTechnicalEventDetails = technicalEventsSelected.filter((event) => {
+    const details = eventDetails[event];
+    return !details || !details.topic || !details.abstractPdfDataUrl;
+  });
+
+  if (missingTechnicalEventDetails.length > 0) {
+    return res.status(400).json({
+      success: false,
+      message: `Technical event details are required for: ${missingTechnicalEventDetails.join(", ")}`,
+    });
+  }
+
   try {
     const insertResult = await createRegistration({
       name: String(payload.name).trim(),
@@ -708,8 +776,11 @@ app.post("/api/register", async (req, res) => {
         participationType === "team"
           ? teamMembers
           : [String(payload.name).trim()],
+      eventDetails,
       paymentReference: String(payload.paymentReference).trim(),
       paymentStatus: "submitted",
+      paymentVerifiedBy: "",
+      paymentVerifiedAt: null,
       regId: String(payload.regId).trim(),
       createdAt: String(payload.createdAt).trim(),
       validationStatus: "pending",
@@ -783,12 +854,18 @@ app.get("/api/registrations", requireAdminAuth, async (req, res) => {
       regId: row.regId,
       paymentReference: row.paymentReference,
       paymentStatus: row.paymentStatus,
+      paymentVerifiedBy: row.paymentVerifiedBy,
+      paymentVerifiedAt: row.paymentVerifiedAt,
       createdAt: row.createdAt,
       validationStatus: row.validationStatus,
       validationMessage: row.validationMessage,
       invitationStatus: row.invitationStatus,
       invitationSentAt: row.invitationSentAt,
       updatedAt: row.updatedAt,
+      eventDetails:
+        row.eventDetails && typeof row.eventDetails === "object"
+          ? row.eventDetails
+          : {},
       events: Array.isArray(row.events)
         ? row.events
         : String(row.eventsText || "")
@@ -804,6 +881,71 @@ app.get("/api/registrations", requireAdminAuth, async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Could not fetch registrations",
+      error: error.message,
+    });
+  }
+});
+
+app.patch("/api/registrations/:id/payment-status", requireAdminAuth, async (req, res) => {
+  const registrationId = Number(req.params.id);
+  const requestedStatus = String(req.body?.paymentStatus || "")
+    .trim()
+    .toLowerCase();
+  const verifier = String(req.body?.verifiedBy || "admin").trim() || "admin";
+
+  if (!Number.isInteger(registrationId) || registrationId <= 0) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid registration id",
+    });
+  }
+
+  const allowedStatuses = ["pending", "submitted", "verified", "failed"];
+  if (!allowedStatuses.includes(requestedStatus)) {
+    return res.status(400).json({
+      success: false,
+      message: `Invalid payment status. Allowed values: ${allowedStatuses.join(", ")}`,
+    });
+  }
+
+  const updates = {
+    paymentStatus: requestedStatus,
+    paymentVerifiedBy:
+      requestedStatus === "verified" || requestedStatus === "failed" ? verifier : "",
+    paymentVerifiedAt:
+      requestedStatus === "verified" || requestedStatus === "failed"
+        ? new Date().toISOString()
+        : null,
+    updatedAt: new Date().toISOString(),
+  };
+
+  try {
+    const result = await updateRegistrationById(registrationId, updates);
+
+    if (!result.changes) {
+      return res.status(404).json({
+        success: false,
+        message: "Registration not found",
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: `Payment status updated to ${requestedStatus}`,
+      id: registrationId,
+      updates,
+    });
+  } catch (error) {
+    reportError(error, {
+      route: "/api/registrations/:id/payment-status",
+      method: "PATCH",
+      registrationId,
+      requestedStatus,
+    });
+
+    return res.status(500).json({
+      success: false,
+      message: "Could not update payment status",
       error: error.message,
     });
   }

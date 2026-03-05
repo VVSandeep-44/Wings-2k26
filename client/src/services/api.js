@@ -140,3 +140,21 @@ export const deleteRegistration = async (id) => {
 
     return result;
 };
+
+export const updateRegistrationPaymentStatus = async (id, paymentStatus, verifiedBy = 'admin') => {
+    const response = await fetch(buildApiUrl(`/api/registrations/${id}/payment-status`), {
+        method: 'PATCH',
+        credentials: 'include',
+        cache: 'no-store',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ paymentStatus, verifiedBy }),
+    });
+
+    const result = await response.json().catch(() => ({}));
+
+    if (!response.ok || !result.success) {
+        throw new Error(result.message || 'Failed to update payment status');
+    }
+
+    return result;
+};
