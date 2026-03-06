@@ -4,7 +4,7 @@ const technicalEvents = [
     {
         title: 'Project Expo',
         description: 'Present innovative real-world projects, explain implementation, and demonstrate technical impact.',
-        image: '/assets/pydah-college.jpeg',
+        image: '/assets/ProjectExpo.jpeg',
     },
     {
         title: 'Circuitry',
@@ -34,12 +34,12 @@ const technicalEvents = [
     {
         title: 'Startup Idea Pitching',
         description: 'Pitch scalable startup concepts, market fit, and execution plans to panel evaluators.',
-        image: '/assets/StartupIdeaPitching.jpeg',
+        image: '/assets/StartupIdeaPitching.png',
     },
     {
         title: 'Paper Presentations (PPT)',
         description: 'Deliver clear, research-oriented technical presentations with structured problem-solution storytelling.',
-        image: '/assets/PaperPresentation.png',
+        image: '/assets/PaperPresenation.png',
     },
 ];
 
