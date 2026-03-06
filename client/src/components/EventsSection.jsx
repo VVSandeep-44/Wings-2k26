@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 const technicalEvents = [
     {
@@ -9,56 +9,85 @@ const technicalEvents = [
     {
         title: 'Circuitry',
         description: 'Design, analyze, and troubleshoot practical electronic circuits under timed challenge conditions.',
-        image: '/assets/logopng.png',
+        image: '/assets/Circuitry.jpeg',
     },
     {
         title: 'Robotics',
         description: 'Build and control bots to solve task-based problem statements and arena rounds.',
-        image: '/assets/logopng1.png',
+        image: '/assets/Robotics.png',
     },
     {
         title: 'Web Planting with AI',
         description: 'Create modern web solutions by integrating AI-assisted workflows and deployment-ready architecture.',
-        image: '/assets/logopng2.png',
+        image: '/assets/Webplanting.png',
     },
     {
         title: 'Techno Quiz',
         description: 'Compete in a fast-paced quiz covering emerging technologies, engineering trends, and innovation.',
-        image: '/assets/jpg wings.jpeg',
+        image: '/assets/TechnoQuiz.jpeg',
     },
     {
         title: 'Debugging Events',
         description: 'Identify and fix code-level issues efficiently with strong logic and precision under time constraints.',
-        image: '/assets/Wingslogo.png',
+        image: '/assets/DebuggingEvents.png',
     },
     {
         title: 'Startup Idea Pitching',
         description: 'Pitch scalable startup concepts, market fit, and execution plans to panel evaluators.',
-        image: '/assets/Wingsmobile.jpeg',
+        image: '/assets/StartupIdeaPitching.jpeg',
     },
     {
         title: 'Paper Presentations (PPT)',
         description: 'Deliver clear, research-oriented technical presentations with structured problem-solution storytelling.',
-        image: '/assets/pydah-logo.jpeg',
+        image: '/assets/PaperPresentation.png',
     },
 ];
 
 export default function EventsSection() {
-    const [startIndex, setStartIndex] = useState(0);
-    const visibleCount = 3;
-    const maxStartIndex = Math.max(technicalEvents.length - visibleCount, 0);
+    const carouselRef = useRef(null);
+    const [canScrollPrev, setCanScrollPrev] = useState(false);
+    const [canScrollNext, setCanScrollNext] = useState(true);
 
-    const visibleEvents = useMemo(
-        () => technicalEvents.slice(startIndex, startIndex + visibleCount),
-        [startIndex]
-    );
+    useEffect(() => {
+        const element = carouselRef.current;
+        if (!element) return undefined;
+
+        const updateScrollButtons = () => {
+            const maxScrollLeft = element.scrollWidth - element.clientWidth;
+            setCanScrollPrev(element.scrollLeft > 2);
+            setCanScrollNext(element.scrollLeft < maxScrollLeft - 2);
+        };
+
+        updateScrollButtons();
+        element.addEventListener('scroll', updateScrollButtons, { passive: true });
+        window.addEventListener('resize', updateScrollButtons);
+
+        return () => {
+            element.removeEventListener('scroll', updateScrollButtons);
+            window.removeEventListener('resize', updateScrollButtons);
+        };
+    }, []);
+
+    const getStepSize = () => {
+        const element = carouselRef.current;
+        if (!element) return 0;
+        const firstCard = element.querySelector('.event-card');
+        if (!firstCard) return 0;
+        const styles = window.getComputedStyle(element);
+        const gap = parseFloat(styles.columnGap || styles.gap || '0') || 0;
+        return firstCard.getBoundingClientRect().width + gap;
+    };
 
     const handlePrev = () => {
-        setStartIndex((prev) => Math.max(prev - 1, 0));
+        const element = carouselRef.current;
+        if (!element) return;
+        element.scrollBy({ left: -getStepSize(), behavior: 'smooth' });
     };
 
     const handleNext = () => {
-        setStartIndex((prev) => Math.min(prev + 1, maxStartIndex));
+        const element = carouselRef.current;
+        if (!element) return;
+        element.scrollBy({ left: getStepSize(), behavior: 'smooth' });
     };
 
     return (
@@ -70,15 +99,18 @@ export default function EventsSection() {
                     type="button"
                     className="events-side-btn"
                     onClick={handlePrev}
-                    disabled={startIndex === 0}
+                    disabled={!canScrollPrev}
                     aria-label="Show previous technical events"
                 >
                     ‹
                 </button>
 
-                <div className="events-grid" aria-label="Technical events list">
-                    {visibleEvents.map((event) => (
-                        <article className="event-card" key={event.title}>
+                <div className="events-grid" aria-label="Technical events list" ref={carouselRef}>
+                    {technicalEvents.map((event) => (
+                        <article
+                            className="event-card"
+                            key={event.title}
+                        >
                             <div className="event-card-image-wrap">
                                 <img src={event.image} alt={event.title} className="event-card-image" loading="lazy" />
                             </div>
@@ -94,7 +126,7 @@ export default function EventsSection() {
                     type="button"
                     className="events-side-btn"
                     onClick={handleNext}
-                    disabled={startIndex >= maxStartIndex}
+                    disabled={!canScrollNext}
                     aria-label="Show next technical events"
                 >
                     ›

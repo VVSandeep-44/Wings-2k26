@@ -3,18 +3,18 @@ export default function AboutSection() {
         <section className="about" id="about">
             <h2 className="section-title">About WINGS 2026</h2>
             <div className="about-content">
-                <p>
+                <p className="about-block">
                     WINGS 2026 is the most anticipated annual event of our college,
                     bringing together students from all Pydah Campuses to showcase their
                     talents, skills, and creativity.
                 </p>
-                <p>
+                <p className="about-block">
                     This two-day extravaganza features competitions, cultural
                     performances, and networking opportunities that transform students
                     into future leaders.
                 </p>
 
-                <div className="college-promo" aria-label="College promotion">
+                <div className="college-promo about-block" aria-label="College promotion">
                     <div className="college-logo-box" role="img" aria-label="Pydah College logo">
                         <img src="/assets/pydah-college.jpeg" alt="Pydah College" />
                     </div>
