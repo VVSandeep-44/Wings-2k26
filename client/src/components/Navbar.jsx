@@ -20,7 +20,7 @@ export default function Navbar() {
 
     return (
         <nav ref={navRef} className={scrolled ? 'scrolled' : ''}>
-            <a href="#home" className="logo">
+            <a href="#home" className="logo" onClick={closeMenu}>
                 <img src="/assets/pydah-logo.jpeg" alt="Pydah Logo" />
             </a>
             <button

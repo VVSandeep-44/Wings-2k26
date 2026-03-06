@@ -87,6 +87,7 @@ export default function HomePage() {
             <Navbar />
             <HeroSection />
             <div className="mid-sections-bg">
+                <div className="mid-sections-bg-layer" aria-hidden="true" />
                 <AboutSection />
                 <EventsSection />
                 <RegistrationSection />
