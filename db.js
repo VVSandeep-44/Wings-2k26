@@ -1,7 +1,14 @@
 const { MongoClient } = require("mongodb");
 
-const MONGODB_URI = process.env.MONGODB_URI || process.env.DATABASE_URL || "";
-const DB_NAME = process.env.MONGODB_DB_NAME || "wings2k26";
+const DEFAULT_DB_NAME = "wings2k26";
+const RAW_MONGODB_URI = process.env.MONGODB_URI || process.env.DATABASE_URL || "";
+const LOCAL_MONGODB_URI = process.env.MONGODB_URI_LOCAL || "";
+const BASE_DB_NAME = process.env.MONGODB_DB_NAME || DEFAULT_DB_NAME;
+const LOCAL_DB_NAME =
+  process.env.LOCAL_MONGODB_DB_NAME ||
+  (BASE_DB_NAME.endsWith("_local") ? BASE_DB_NAME : `${BASE_DB_NAME}_local`);
+const MONGODB_URI = IS_PRODUCTION ? RAW_MONGODB_URI : (LOCAL_MONGODB_URI || RAW_MONGODB_URI);
+const DB_NAME = IS_PRODUCTION ? BASE_DB_NAME : LOCAL_DB_NAME;
 const REGISTRATIONS_COLLECTION = "registrations";
 const COUNTERS_COLLECTION = "counters";
 const SETTINGS_COLLECTION = "settings";
@@ -80,6 +87,11 @@ const initDatabase = async () => {
     await registrationsCollection.createIndex({ createdAt: -1 });
 
     console.log(`MongoDB connected: ${DB_NAME}.${REGISTRATIONS_COLLECTION}`);
+    if (!IS_PRODUCTION) {
+      console.log(
+        `Local data isolation enabled. Using ${LOCAL_MONGODB_URI ? "MONGODB_URI_LOCAL" : "MONGODB_URI"} with DB ${DB_NAME}.`
+      );
+    }
   } catch (error) {
     if (!ALLOW_IN_MEMORY_FALLBACK) {
       throw error;
