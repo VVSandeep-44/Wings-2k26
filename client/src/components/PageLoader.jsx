@@ -6,7 +6,16 @@ export default function PageLoader({ fadingOut }) {
                     <span className="page-loader-ring"></span>
                     <span className="page-loader-orbit"></span>
                     <span className="page-loader-spark"></span>
-                    <img src="/assets/PydahFlag.png" alt="" className="page-loader-flag" />
+                    <img
+                        src="/assets/PydahFlag.png"
+                        alt=""
+                        className="page-loader-flag"
+                        loading="eager"
+                        fetchPriority="high"
+                        decoding="async"
+                        width="560"
+                        height="560"
+                    />
                 </div>
                 <h2>PYDAH WINGS 2K26</h2>
                 <p>Preparing your experience...</p>

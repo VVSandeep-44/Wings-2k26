@@ -4,6 +4,7 @@ import {
     checkAdminSession,
     fetchRegistrations,
     deleteRegistration as deleteRegistrationApi,
+    restoreRegistration as restoreRegistrationApi,
     updateRegistrationPaymentStatus,
     fetchAdminRegistrationStatus,
     updateAdminRegistrationStatus,
@@ -160,38 +161,91 @@ const buildCsv = (rows) => {
     return lines.join('\n');
 };
 
-const buildSingleRegistrationResponseJson = (row) =>
-    JSON.stringify(
-        {
-            name: row?.name || '',
-            email: row?.email || '',
-            phone: row?.phone || '',
-            college: row?.college || '',
-            department: row?.department || '',
-            year: row?.year || '',
-            events: Array.isArray(row?.events) ? row.events : [],
-            eventDetails:
-                row?.eventDetails && typeof row.eventDetails === 'object'
-                    ? row.eventDetails
-                    : {},
-            technicalSubmissionStatus: getTechnicalSubmissionStatus(row),
-            regId: row?.regId || '',
-            participationType: row?.participationType || 'individual',
-            teamName: row?.teamName || '',
-            teamMembers: Array.isArray(row?.teamMembers) ? row.teamMembers : [],
-            paymentReference: row?.paymentReference || '',
-            paymentStatus: row?.paymentStatus || 'submitted',
-            paymentVerifiedBy: row?.paymentVerifiedBy || '',
-            paymentVerifiedAt: row?.paymentVerifiedAt || null,
-            validationStatus: row?.validationStatus || 'pending',
-            invitationStatus: row?.invitationStatus || 'queued',
-            validationMessage: row?.validationMessage || '',
-            createdAt: row?.createdAt || null,
-            createdAtFormatted: formatDate(row?.createdAt),
-        },
-        null,
-        2
+const buildSingleRegistrationPdf = async (row, filename) => {
+    const { jsPDF } = await import('jspdf');
+    const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+    const margin = 40;
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const maxWidth = pageWidth - margin * 2;
+    const lineGap = 16;
+    let y = margin;
+
+    const ensureSpace = (requiredHeight = lineGap) => {
+        if (y + requiredHeight > pageHeight - margin) {
+            doc.addPage();
+            y = margin;
+        }
+    };
+
+    const addHeading = (text) => {
+        ensureSpace(24);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(14);
+        doc.text(text, margin, y);
+        y += 20;
+    };
+
+    const addField = (label, value) => {
+        const safeValue = String(value ?? '').trim() || '-';
+        const lines = doc.splitTextToSize(`${label}: ${safeValue}`, maxWidth);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(11);
+        lines.forEach((line) => {
+            ensureSpace(lineGap);
+            doc.text(line, margin, y);
+            y += lineGap;
+        });
+    };
+
+    const eventDetails = row?.eventDetails && typeof row.eventDetails === 'object'
+        ? row.eventDetails
+        : {};
+
+    addHeading('WINGS 2k26 - Registration Response');
+    addField('Name', row?.name);
+    addField('Registration ID', row?.regId);
+    addField('Email', row?.email);
+    addField('Phone', row?.phone);
+    addField('College', row?.college);
+    addField('Department / Year', `${row?.department || '-'} / ${row?.year || '-'}`);
+    addField('Participation Type', row?.participationType || 'individual');
+    addField('Team Name', row?.teamName);
+    addField('Team Members', (row?.teamMembers || []).join(', '));
+    addField('Events', (row?.events || []).map((event) => formatEventName(event)).join(', '));
+    addField('Technical Submission', getTechnicalSubmissionStatus(row));
+
+    addHeading('Payment & Validation');
+    addField('Payment Reference', row?.paymentReference);
+    addField('Payment Status', row?.paymentStatus || 'submitted');
+    addField('Payment Verified By', row?.paymentVerifiedBy);
+    addField('Payment Verified At',
+        String(row?.paymentStatus || '').toLowerCase() === 'verified'
+            ? formatDate(row?.paymentVerifiedAt)
+            : ''
     );
+    addField('Validation Status', row?.validationStatus || 'pending');
+    addField('Invitation Status', row?.invitationStatus || 'queued');
+    addField('Validation Message', row?.validationMessage);
+    addField('Created At', formatDate(row?.createdAt));
+
+    addHeading('Technical Event Details');
+    if (Object.keys(eventDetails).length === 0) {
+        addField('Details', '-');
+    } else {
+        Object.entries(eventDetails).forEach(([eventKey, details]) => {
+            addField('Event', formatEventName(eventKey));
+            addField('Topic', details?.topic || '-');
+            addField(
+                'Abstract PDF',
+                details?.abstractPdfName || (details?.abstractPdfDataUrl ? 'Uploaded PDF' : '-')
+            );
+            y += 6;
+        });
+    }
+
+    doc.save(filename);
+};
 
 const getAbstractPdfEntries = (row) => {
     const details = row?.eventDetails && typeof row.eventDetails === 'object'
@@ -207,7 +261,28 @@ const getAbstractPdfEntries = (row) => {
         .filter((entry) => entry.dataUrl && entry.dataUrl.startsWith('data:application/pdf;base64,'));
 };
 
-    const hasAbstractPdfs = (row) => getAbstractPdfEntries(row).length > 0;
+const hasAbstractPdfs = (row) => getAbstractPdfEntries(row).length > 0;
+
+const getPaymentBadgeClass = (status) => {
+    const value = String(status || 'submitted').toLowerCase();
+    if (value === 'verified') return 'badge badge-success';
+    if (value === 'failed') return 'badge badge-danger';
+    return 'badge badge-warn';
+};
+
+const getValidationBadgeClass = (status) => {
+    const value = String(status || 'pending').toLowerCase();
+    if (value === 'approved') return 'badge badge-success';
+    if (value === 'rejected') return 'badge badge-danger';
+    return 'badge badge-warn';
+};
+
+const getInviteBadgeClass = (status) => {
+    const value = String(status || 'queued').toLowerCase();
+    if (value === 'sent') return 'badge badge-success';
+    if (value === 'failed') return 'badge badge-danger';
+    return 'badge badge-info';
+};
 
 const downloadFile = (content, filename, mimeType) => {
     const blob = new Blob([content], { type: mimeType });
@@ -230,7 +305,9 @@ export default function AdminDashboardPage() {
     const [limit, setLimit] = useState(20);
     const [menuOpen, setMenuOpen] = useState(false);
     const [deletingId, setDeletingId] = useState(null);
+    const [restoringId, setRestoringId] = useState(null);
     const [paymentUpdatingId, setPaymentUpdatingId] = useState(null);
+    const [isTrashView, setIsTrashView] = useState(false);
     const [selectedRegistration, setSelectedRegistration] = useState(null);
     const [registrationControl, setRegistrationControl] = useState({
         isOpen: true,
@@ -274,18 +351,26 @@ export default function AdminDashboardPage() {
         []
     );
 
-    const loadRegistrations = useCallback(async (currentLimit) => {
+    const loadRegistrations = useCallback(async (currentLimit, trashView = isTrashView) => {
         const ok = await checkAdminSession();
         if (!ok) {
             navigate('/admin-login', { replace: true });
             return;
         }
-        setStatus('Loading registrations...');
+        setStatus(trashView ? 'Loading trashed registrations...' : 'Loading registrations...');
         try {
-            const result = await fetchRegistrations(currentLimit);
-            const data = sortByRegistrationTimeDesc(result.data || []);
+            const result = await fetchRegistrations(currentLimit, { onlyDeleted: trashView });
+            const scopedRows = (Array.isArray(result.data) ? result.data : []).filter((row) =>
+                trashView ? row?.isDeleted === true : row?.isDeleted !== true
+            );
+            const data = sortByRegistrationTimeDesc(scopedRows);
             setAllRegistrations(data);
-            setStatus(`Loaded ${result.count} registration(s).`, 'ok');
+            setStatus(
+                trashView
+                    ? `Loaded ${data.length} trashed registration(s).`
+                    : `Loaded ${data.length} registration(s).`,
+                'ok'
+            );
             return data;
         } catch (error) {
             setAllRegistrations([]);
@@ -293,7 +378,7 @@ export default function AdminDashboardPage() {
             setStatus(error.message || 'Unexpected error occurred.', 'err');
             return [];
         }
-    }, [navigate]);
+    }, [isTrashView, navigate]);
 
     const loadRegistrationControl = useCallback(async () => {
         try {
@@ -339,9 +424,56 @@ export default function AdminDashboardPage() {
         }
     }, [filteredRegistrations, selectedRegistration]);
 
+    useEffect(() => {
+        if (!selectedRegistration) return undefined;
+
+        const onKeyDown = (event) => {
+            if (event.key === 'Escape') {
+                setSelectedRegistration(null);
+            }
+        };
+
+        document.addEventListener('keydown', onKeyDown);
+        return () => document.removeEventListener('keydown', onKeyDown);
+    }, [selectedRegistration]);
+
+    useEffect(() => {
+        if (!selectedRegistration) return undefined;
+
+        const scrollY = window.scrollY;
+        const previousHtmlOverflow = document.documentElement.style.overflow;
+        const previousBodyOverflow = document.body.style.overflow;
+        const previousBodyPosition = document.body.style.position;
+        const previousBodyTop = document.body.style.top;
+        const previousBodyWidth = document.body.style.width;
+
+        document.documentElement.style.overflow = 'hidden';
+        document.body.style.overflow = 'hidden';
+        document.body.style.position = 'fixed';
+        document.body.style.top = `-${scrollY}px`;
+        document.body.style.width = '100%';
+
+        return () => {
+            document.documentElement.style.overflow = previousHtmlOverflow;
+            document.body.style.overflow = previousBodyOverflow;
+            document.body.style.position = previousBodyPosition;
+            document.body.style.top = previousBodyTop;
+            document.body.style.width = previousBodyWidth;
+            window.scrollTo(0, scrollY);
+        };
+    }, [selectedRegistration]);
+
     const handleRefresh = async () => {
         await loadRegistrationControl();
-        const data = await loadRegistrations(limit);
+        const data = await loadRegistrations(limit, isTrashView);
+        if (data) applyFilters(data, searchQuery, eventFilter, sortOrder);
+    };
+
+    const handleToggleTrashView = async () => {
+        const nextView = !isTrashView;
+        setIsTrashView(nextView);
+        setSelectedRegistration(null);
+        const data = await loadRegistrations(limit, nextView);
         if (data) applyFilters(data, searchQuery, eventFilter, sortOrder);
     };
 
@@ -393,18 +525,19 @@ export default function AdminDashboardPage() {
         if (data) applyFilters(data, searchQuery, eventFilter, sortOrder);
     };
 
-    const handleDelete = async (id, name) => {
+    const handleDelete = async (row) => {
+        const deleteKey = row?.regId || row?.id;
         const confirmed = window.confirm(
-            `Delete registration for ${name || 'this user'}? This cannot be undone.`
+            `Delete registration for ${row?.name || 'this user'} (${row?.regId || 'no reg id'})? This cannot be undone.`
         );
         if (!confirmed) return;
 
-        setDeletingId(id);
+        setDeletingId(deleteKey);
         setStatus('Deleting registration...');
 
         try {
-            await deleteRegistrationApi(id);
-            setStatus('Registration deleted successfully.', 'ok');
+            await deleteRegistrationApi({ id: row?.id, regId: row?.regId });
+            setStatus('Registration moved to trash.', 'ok');
             await handleRefresh();
         } catch (error) {
             setStatus(error.message || 'Could not delete registration.', 'err');
@@ -413,12 +546,33 @@ export default function AdminDashboardPage() {
         }
     };
 
+    const handleRestore = async (row) => {
+        const restoreKey = row?.regId || row?.id;
+        if (!row?.regId) {
+            setStatus('Cannot restore this record. Missing registration ID.', 'err');
+            return;
+        }
+
+        setRestoringId(restoreKey);
+        setStatus('Restoring registration from trash...');
+
+        try {
+            await restoreRegistrationApi(row.regId, 'admin');
+            setStatus('Registration restored successfully.', 'ok');
+            await handleRefresh();
+        } catch (error) {
+            setStatus(error.message || 'Could not restore registration.', 'err');
+        } finally {
+            setRestoringId(null);
+        }
+    };
+
     const handleViewDetails = (row) => {
         setSelectedRegistration(row);
         setStatus(`Viewing details for ${row?.name || row?.regId || 'selected registrant'}.`, 'ok');
     };
 
-    const handleDownloadSingleResponse = (row) => {
+    const handleDownloadSingleResponse = async (row) => {
         if (!row) {
             setStatus('Select a registration first.', 'err');
             return;
@@ -428,13 +582,12 @@ export default function AdminDashboardPage() {
             .trim()
             .replace(/[^a-zA-Z0-9-_]+/g, '-');
         const stamp = new Date().toISOString().slice(0, 10);
-        const jsonContent = buildSingleRegistrationResponseJson(row);
-        downloadFile(
-            jsonContent,
-            `wings-registration-response-${safeId}-${stamp}.json`,
-            'application/json;charset=utf-8;'
-        );
-        setStatus('Selected registration response downloaded.', 'ok');
+        try {
+            await buildSingleRegistrationPdf(row, `wings-registration-response-${safeId}-${stamp}.pdf`);
+            setStatus('Selected registration response PDF downloaded.', 'ok');
+        } catch (error) {
+            setStatus(error?.message || 'Could not generate PDF right now.', 'err');
+        }
     };
 
     const handleDownloadAllAbstractPdfs = (row) => {
@@ -581,6 +734,13 @@ export default function AdminDashboardPage() {
                                     Refresh Data
                                 </button>
                                 <button
+                                    type="button"
+                                    className="btn-secondary"
+                                    onClick={handleToggleTrashView}
+                                >
+                                    {isTrashView ? 'Show Active Registrations' : 'Show Trash'}
+                                </button>
+                                <button
                                     id="exportCsvBtn"
                                     className="btn-secondary"
                                     onClick={() => handleExport('csv')}
@@ -663,47 +823,79 @@ export default function AdminDashboardPage() {
                     </div>
 
                     {selectedRegistration && (
-                        <div className="selected-response-panel">
+                        <div
+                            className="details-modal-overlay"
+                            role="presentation"
+                            onClick={() => setSelectedRegistration(null)}
+                        >
+                        <div
+                            className="selected-response-panel details-modal"
+                            role="dialog"
+                            aria-modal="true"
+                            aria-labelledby="selectedRegistrantTitle"
+                            onClick={(event) => event.stopPropagation()}
+                        >
+                            <button
+                                type="button"
+                                className="details-modal-close"
+                                aria-label="Close registrant details popup"
+                                onClick={() => setSelectedRegistration(null)}
+                            >
+                                ×
+                            </button>
                             <div className="selected-response-head">
-                                <h3>Registrant Details</h3>
+                                <h3 id="selectedRegistrantTitle">Registrant Details</h3>
                                 <div className="selected-response-actions">
                                     <button
                                         type="button"
-                                        className="btn-secondary"
+                                        className="action-btn action-btn-secondary"
                                         onClick={() => handleDownloadSingleResponse(selectedRegistration)}
                                     >
-                                        Download This Response
+                                        Download Response PDF
                                     </button>
                                     <button
                                         type="button"
-                                        className="btn-secondary"
+                                        className="action-btn action-btn-secondary"
                                         onClick={() => handleDownloadAllAbstractPdfs(selectedRegistration)}
                                     >
                                         Download Abstract PDFs
                                     </button>
                                     <button
                                         type="button"
-                                        className="btn-secondary"
+                                        className="action-btn action-btn-ghost"
                                         onClick={() => setSelectedRegistration(null)}
                                     >
                                         Close
                                     </button>
                                 </div>
                             </div>
+                            <div className="selected-response-kpis">
+                                <span className={getPaymentBadgeClass(selectedRegistration.paymentStatus)}>
+                                    Payment: {selectedRegistration.paymentStatus || 'submitted'}
+                                </span>
+                                <span className={getValidationBadgeClass(selectedRegistration.validationStatus)}>
+                                    Validation: {selectedRegistration.validationStatus || 'pending'}
+                                </span>
+                                <span className={getInviteBadgeClass(selectedRegistration.invitationStatus)}>
+                                    Invite: {selectedRegistration.invitationStatus || 'queued'}
+                                </span>
+                                <span className="badge badge-info">
+                                    Technical: {getTechnicalSubmissionStatus(selectedRegistration)}
+                                </span>
+                            </div>
                             <div className="selected-response-grid">
-                                <div><strong>Name:</strong> {selectedRegistration.name || '-'}</div>
-                                <div><strong>Reg ID:</strong> {selectedRegistration.regId || '-'}</div>
-                                <div><strong>Email:</strong> {selectedRegistration.email || '-'}</div>
-                                <div><strong>Phone:</strong> {selectedRegistration.phone || '-'}</div>
-                                <div><strong>College:</strong> {selectedRegistration.college || '-'}</div>
-                                <div><strong>Department / Year:</strong> {selectedRegistration.department || '-'} / {selectedRegistration.year || '-'}</div>
-                                <div><strong>Participation:</strong> {selectedRegistration.participationType || 'individual'}</div>
-                                <div><strong>Team Name:</strong> {selectedRegistration.teamName || '-'}</div>
-                                <div className="full"><strong>Team Members:</strong> {(selectedRegistration.teamMembers || []).join(', ') || '-'}</div>
-                                <div className="full"><strong>Events:</strong> {(selectedRegistration.events || []).map((event) => formatEventName(event)).join(', ') || '-'}</div>
-                                <div><strong>Technical Submission:</strong> {getTechnicalSubmissionStatus(selectedRegistration)}</div>
+                                <div><span className="detail-label">Name</span>{selectedRegistration.name || '-'}</div>
+                                <div><span className="detail-label">Reg ID</span>{selectedRegistration.regId || '-'}</div>
+                                <div><span className="detail-label">Email</span>{selectedRegistration.email || '-'}</div>
+                                <div><span className="detail-label">Phone</span>{selectedRegistration.phone || '-'}</div>
+                                <div><span className="detail-label">College</span>{selectedRegistration.college || '-'}</div>
+                                <div><span className="detail-label">Department / Year</span>{selectedRegistration.department || '-'} / {selectedRegistration.year || '-'}</div>
+                                <div><span className="detail-label">Participation</span>{selectedRegistration.participationType || 'individual'}</div>
+                                <div><span className="detail-label">Team Name</span>{selectedRegistration.teamName || '-'}</div>
+                                <div className="full"><span className="detail-label">Team Members</span>{(selectedRegistration.teamMembers || []).join(', ') || '-'}</div>
+                                <div className="full"><span className="detail-label">Events</span>{(selectedRegistration.events || []).map((event) => formatEventName(event)).join(', ') || '-'}</div>
                                 <div className="full">
-                                    <strong>Technical Event Details:</strong>{' '}
+                                    <span className="detail-label">Technical Event Details</span>
                                     {Object.keys(selectedRegistration.eventDetails || {}).length === 0 ? (
                                         '-'
                                     ) : (
@@ -741,18 +933,20 @@ export default function AdminDashboardPage() {
                                         </div>
                                     )}
                                 </div>
-                                <div><strong>Payment Ref:</strong> {selectedRegistration.paymentReference || '-'}</div>
-                                <div><strong>Payment Status:</strong> {selectedRegistration.paymentStatus || 'submitted'}</div>
-                                <div><strong>Payment Verified By:</strong> {selectedRegistration.paymentVerifiedBy || '-'}</div>
-                                <div><strong>Payment Verified At:</strong> {formatDate(selectedRegistration.paymentVerifiedAt)}</div>
-                                <div><strong>Validation:</strong> {selectedRegistration.validationStatus || 'pending'}</div>
-                                <div><strong>Invite:</strong> {selectedRegistration.invitationStatus || 'queued'}</div>
-                                <div className="full"><strong>Validation Message:</strong> {selectedRegistration.validationMessage || '-'}</div>
-                                <div className="full"><strong>Created At:</strong> {formatDate(selectedRegistration.createdAt)}</div>
+                                <div><span className="detail-label">Payment Ref</span>{selectedRegistration.paymentReference || '-'}</div>
+                                <div><span className="detail-label">Payment Verified By</span>{selectedRegistration.paymentVerifiedBy || '-'}</div>
+                                <div>
+                                    <span className="detail-label">Payment Verified At</span>
+                                    {String(selectedRegistration.paymentStatus || '').toLowerCase() === 'verified'
+                                        ? formatDate(selectedRegistration.paymentVerifiedAt)
+                                        : ''}
+                                </div>
+                                <div><span className="detail-label">Created At</span>{formatDate(selectedRegistration.createdAt)}</div>
+                                <div className="full"><span className="detail-label">Validation Message</span>{selectedRegistration.validationMessage || '-'}</div>
                                 <div className="full response-payment-actions">
                                     <button
                                         type="button"
-                                        className="btn-secondary"
+                                        className="action-btn action-btn-primary"
                                         disabled={paymentUpdatingId === selectedRegistration.id}
                                         onClick={() => handlePaymentStatusUpdate(selectedRegistration, 'verified')}
                                     >
@@ -760,7 +954,7 @@ export default function AdminDashboardPage() {
                                     </button>
                                     <button
                                         type="button"
-                                        className="btn-secondary"
+                                        className="action-btn action-btn-danger"
                                         disabled={paymentUpdatingId === selectedRegistration.id}
                                         onClick={() => handlePaymentStatusUpdate(selectedRegistration, 'failed')}
                                     >
@@ -768,7 +962,7 @@ export default function AdminDashboardPage() {
                                     </button>
                                     <button
                                         type="button"
-                                        className="btn-secondary"
+                                        className="action-btn action-btn-ghost"
                                         disabled={paymentUpdatingId === selectedRegistration.id}
                                         onClick={() => handlePaymentStatusUpdate(selectedRegistration, 'pending')}
                                     >
@@ -776,6 +970,7 @@ export default function AdminDashboardPage() {
                                     </button>
                                 </div>
                             </div>
+                        </div>
                         </div>
                     )}
 
@@ -808,7 +1003,7 @@ export default function AdminDashboardPage() {
                                     </tr>
                                 ) : (
                                     filteredRegistrations.map((row, index) => (
-                                        <tr key={row.id || row.regId || index}>
+                                        <tr key={row.regId || row.id || index}>
                                             <td data-label="#">{index + 1}</td>
                                             <td data-label="Name">{row.name}</td>
                                             <td data-label="Contact">
@@ -835,19 +1030,19 @@ export default function AdminDashboardPage() {
                                             <td data-label="Payment">
                                                 <div className="meta">Ref: {row.paymentReference || '-'}</div>
                                                 <div>
-                                                    <span className="badge">
+                                                    <span className={getPaymentBadgeClass(row.paymentStatus)}>
                                                         status: {escapeHtml(row.paymentStatus || 'submitted')}
                                                     </span>
                                                 </div>
                                             </td>
                                             <td data-label="Validation / Invite">
                                                 <div>
-                                                    <span className="badge">
+                                                    <span className={getValidationBadgeClass(row.validationStatus)}>
                                                         validation: {escapeHtml(row.validationStatus || 'pending')}
                                                     </span>
                                                 </div>
                                                 <div>
-                                                    <span className="badge">
+                                                    <span className={getInviteBadgeClass(row.invitationStatus)}>
                                                         invite: {escapeHtml(row.invitationStatus || 'queued')}
                                                     </span>
                                                 </div>
@@ -860,27 +1055,40 @@ export default function AdminDashboardPage() {
                                                 <div className="row-actions">
                                                     <button
                                                         type="button"
-                                                        className="btn-secondary view-btn"
+                                                        className="action-btn action-btn-primary view-btn"
                                                         onClick={() => handleViewDetails(row)}
                                                     >
                                                         View
                                                     </button>
-                                                    <button
-                                                        type="button"
-                                                        className="btn-secondary view-btn"
-                                                        disabled={!hasAbstractPdfs(row)}
-                                                        onClick={() => handleDownloadAllAbstractPdfs(row)}
-                                                        title={hasAbstractPdfs(row) ? 'Download uploaded abstract PDFs' : 'No abstract PDFs uploaded'}
-                                                    >
-                                                        Abstract PDFs
-                                                    </button>
-                                                    <button
-                                                        className="delete-btn"
-                                                        disabled={deletingId === row.id}
-                                                        onClick={() => handleDelete(row.id, row.name)}
-                                                    >
-                                                        {deletingId === row.id ? 'Deleting...' : 'Delete'}
-                                                    </button>
+                                                    {isTrashView ? (
+                                                        <button
+                                                            type="button"
+                                                            className="action-btn action-btn-secondary view-btn"
+                                                            disabled={restoringId === (row.regId || row.id)}
+                                                            onClick={() => handleRestore(row)}
+                                                        >
+                                                            {restoringId === (row.regId || row.id) ? 'Restoring...' : 'Restore'}
+                                                        </button>
+                                                    ) : (
+                                                        <>
+                                                            <button
+                                                                type="button"
+                                                                className="action-btn action-btn-secondary view-btn"
+                                                                disabled={!hasAbstractPdfs(row)}
+                                                                onClick={() => handleDownloadAllAbstractPdfs(row)}
+                                                                title={hasAbstractPdfs(row) ? 'Download uploaded abstract PDFs' : 'No abstract PDFs uploaded'}
+                                                            >
+                                                                Abstract PDFs
+                                                            </button>
+                                                            <button
+                                                                className="action-btn action-btn-danger delete-btn"
+                                                                disabled={deletingId === (row.regId || row.id)}
+                                                                onClick={() => handleDelete(row)}
+                                                            >
+                                                                {deletingId === (row.regId || row.id) ? 'Deleting...' : 'Delete'}
+                                                            </button>
+                                                        </>
+                                                    )}
                                                 </div>
                                             </td>
                                         </tr>

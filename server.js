@@ -19,6 +19,7 @@ if (NEW_RELIC_ENABLED) {
 
 const path = require("path");
 const https = require("https");
+const crypto = require("crypto");
 const dns = require("dns").promises;
 const express = require("express");
 const cors = require("cors");
@@ -31,7 +32,11 @@ const {
   updateRegistrationById,
   updateRegistrationByRegId,
   listRegistrations,
+  getRegistrationByRegId,
   deleteRegistrationById,
+  deleteRegistrationByRegId,
+  softDeleteRegistrationByRegId,
+  restoreRegistrationByRegId,
   getRegistrationControl,
   setRegistrationControl,
 } = require("./db");
@@ -89,6 +94,18 @@ const EVENT_DATE_TEXT = "March 13-14, 2026";
 const EVENT_VENUE_TEXT = "Pydah College of Engineering";
 const EVENT_REGISTER_URL =
   process.env.EVENT_REGISTER_URL || "https://wings-2k26.onrender.com/#register";
+const DEFAULT_PUBLIC_ORIGIN = "https://wings-2k26.onrender.com";
+const PUBLIC_APP_BASE_URL =
+  parseOriginFromUrl(process.env.PUBLIC_APP_BASE_URL || "") ||
+  parseOriginFromUrl(EVENT_REGISTER_URL) ||
+  DEFAULT_PUBLIC_ORIGIN;
+const REGISTRATION_VIEW_BASE_URL =
+  String(process.env.REGISTRATION_VIEW_BASE_URL || `${PUBLIC_APP_BASE_URL}/registration`)
+    .trim()
+    .replace(/\/+$/, "");
+const REGISTRATION_VIEW_SECRET = String(
+  process.env.REGISTRATION_VIEW_SECRET || ADMIN_SESSION_TOKEN
+).trim();
 const SENTRY_DSN = process.env.SENTRY_DSN || "";
 const SENTRY_ENVIRONMENT =
   process.env.SENTRY_ENVIRONMENT || process.env.NODE_ENV || "development";
@@ -146,6 +163,40 @@ if (!BREVO_API_KEY) {
     "Brevo API key is not configured. Invitation emails will fail until BREVO_API_KEY (or BREVO_SMTP_KEY) is set."
   );
 }
+
+if (!process.env.REGISTRATION_VIEW_SECRET) {
+  console.warn(
+    "REGISTRATION_VIEW_SECRET is not set. Falling back to ADMIN_SESSION_TOKEN for QR view links."
+  );
+}
+
+const buildRegistrationViewToken = ({ regId, email }) => {
+  const normalizedRegId = String(regId || "").trim();
+  const normalizedEmail = String(email || "").trim().toLowerCase();
+  const payload = `${normalizedRegId}|${normalizedEmail}`;
+  return crypto
+    .createHmac("sha256", REGISTRATION_VIEW_SECRET)
+    .update(payload)
+    .digest("hex");
+};
+
+const isValidRegistrationViewToken = ({ regId, email, token }) => {
+  const expected = buildRegistrationViewToken({ regId, email });
+  const provided = String(token || "").trim();
+
+  if (!provided || expected.length !== provided.length) {
+    return false;
+  }
+
+  try {
+    return crypto.timingSafeEqual(
+      Buffer.from(expected, "utf8"),
+      Buffer.from(provided, "utf8")
+    );
+  } catch (_error) {
+    return false;
+  }
+};
 
 const requestJson = (method, url, payload, headers = {}) =>
   new Promise((resolve, reject) => {
@@ -414,6 +465,11 @@ const sendInvitationEmail = async ({
     };
   }
 
+  const viewToken = buildRegistrationViewToken({ regId, email });
+  const detailsViewUrl = `${REGISTRATION_VIEW_BASE_URL}/${encodeURIComponent(
+    String(regId || "").trim()
+  )}?token=${encodeURIComponent(viewToken)}`;
+
   const htmlContent = buildInvitationEmailHtml({
     name,
     email,
@@ -431,6 +487,7 @@ const sendInvitationEmail = async ({
     eventDateText: EVENT_DATE_TEXT,
     eventVenueText: EVENT_VENUE_TEXT,
     eventRegisterUrl: EVENT_REGISTER_URL,
+    detailsViewUrl,
   });
 
   try {
@@ -935,9 +992,10 @@ app.post("/api/register", async (req, res) => {
 
 app.get("/api/registrations", requireAdminAuth, async (req, res) => {
   const limit = Math.min(Number(req.query.limit) || 20, 100);
+  const onlyDeleted = String(req.query.onlyDeleted || "").toLowerCase() === "true";
 
   try {
-    const rows = await listRegistrations(limit);
+    const rows = await listRegistrations(limit, { onlyDeleted });
     const normalized = rows.map((row) => ({
       id: row.id,
       name: row.name,
@@ -959,6 +1017,9 @@ app.get("/api/registrations", requireAdminAuth, async (req, res) => {
       validationMessage: row.validationMessage,
       invitationStatus: row.invitationStatus,
       invitationSentAt: row.invitationSentAt,
+      isDeleted: row.isDeleted === true,
+      deletedAt: row.deletedAt || null,
+      deletedBy: row.deletedBy || "",
       updatedAt: row.updatedAt,
       eventDetails:
         row.eventDetails && typeof row.eventDetails === "object"
@@ -979,6 +1040,82 @@ app.get("/api/registrations", requireAdminAuth, async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Could not fetch registrations",
+      error: error.message,
+    });
+  }
+});
+
+app.get("/api/public/registrations/:regId", async (req, res) => {
+  const regId = String(req.params.regId || "").trim();
+  const token = String(req.query.token || "").trim();
+
+  if (!regId || !token) {
+    return res.status(400).json({
+      success: false,
+      message: "Registration ID and token are required",
+    });
+  }
+
+  try {
+    const row = await getRegistrationByRegId(regId);
+
+    if (!row) {
+      return res.status(404).json({
+        success: false,
+        message: "Registration not found",
+      });
+    }
+
+    if (!isValidRegistrationViewToken({ regId: row.regId, email: row.email, token })) {
+      return res.status(403).json({
+        success: false,
+        message: "Invalid or expired token",
+      });
+    }
+
+    const events = Array.isArray(row.events)
+      ? row.events
+      : String(row.eventsText || "")
+          .split(",")
+          .map((entry) => entry.trim())
+          .filter(Boolean);
+
+    return res.json({
+      success: true,
+      data: {
+        name: row.name || "",
+        email: row.email || "",
+        phone: row.phone || "",
+        college: row.college || "",
+        department: row.department || "",
+        year: row.year || "",
+        regId: row.regId || "",
+        participationType: row.participationType || "individual",
+        teamName: row.teamName || "",
+        teamMembers: Array.isArray(row.teamMembers) ? row.teamMembers : [],
+        events,
+        paymentReference: row.paymentReference || "",
+        paymentStatus: row.paymentStatus || "submitted",
+        paymentVerifiedAt: row.paymentVerifiedAt || null,
+        validationStatus: row.validationStatus || "pending",
+        invitationStatus: row.invitationStatus || "queued",
+        createdAt: row.createdAt || null,
+        eventDetails:
+          row.eventDetails && typeof row.eventDetails === "object"
+            ? row.eventDetails
+            : {},
+      },
+    });
+  } catch (error) {
+    reportError(error, {
+      route: "/api/public/registrations/:regId",
+      method: "GET",
+      regId,
+    });
+
+    return res.status(500).json({
+      success: false,
+      message: "Could not fetch registration details",
       error: error.message,
     });
   }
@@ -1084,6 +1221,88 @@ app.delete("/api/registrations/:id", requireAdminAuth, async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Could not delete registration",
+      error: error.message,
+    });
+  }
+});
+
+app.delete("/api/registrations/by-regid/:regId", requireAdminAuth, async (req, res) => {
+  const registrationRegId = String(req.params.regId || "").trim();
+  const deletedBy = String(req.query.deletedBy || "admin").trim() || "admin";
+
+  if (!registrationRegId) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid registration ID",
+    });
+  }
+
+  try {
+    const result = await softDeleteRegistrationByRegId(registrationRegId, deletedBy);
+
+    if (!result.changes) {
+      return res.status(404).json({
+        success: false,
+        message: "Registration not found",
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: "Registration moved to trash",
+      deletedRegId: registrationRegId,
+    });
+  } catch (error) {
+    reportError(error, {
+      route: "/api/registrations/by-regid/:regId",
+      method: "DELETE",
+      registrationRegId,
+    });
+
+    return res.status(500).json({
+      success: false,
+      message: "Could not delete registration",
+      error: error.message,
+    });
+  }
+});
+
+app.patch("/api/registrations/by-regid/:regId/restore", requireAdminAuth, async (req, res) => {
+  const registrationRegId = String(req.params.regId || "").trim();
+  const restoredBy = String(req.body?.restoredBy || "admin").trim() || "admin";
+
+  if (!registrationRegId) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid registration ID",
+    });
+  }
+
+  try {
+    const result = await restoreRegistrationByRegId(registrationRegId, restoredBy);
+
+    if (!result.changes) {
+      return res.status(404).json({
+        success: false,
+        message: "Registration not found in trash",
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: "Registration restored successfully",
+      restoredRegId: registrationRegId,
+    });
+  } catch (error) {
+    reportError(error, {
+      route: "/api/registrations/by-regid/:regId/restore",
+      method: "PATCH",
+      registrationRegId,
+    });
+
+    return res.status(500).json({
+      success: false,
+      message: "Could not restore registration",
       error: error.message,
     });
   }

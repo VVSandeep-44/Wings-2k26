@@ -13,6 +13,15 @@ export default function SmoothScrollProvider({ children }) {
             touchMultiplier: 1.1,
             easing: (value) => 1 - Math.pow(1 - value, 4),
             anchors: true,
+            // Let modal/dialog areas use native scrolling (do not hijack with Lenis).
+            prevent: (node) => {
+                if (!node || typeof node.closest !== 'function') return false;
+                return Boolean(
+                    node.closest(
+                        '.details-modal, .close-confirm-modal, .technical-details-modal, [data-native-scroll="true"]'
+                    )
+                );
+            },
         });
 
         let frameId = 0;

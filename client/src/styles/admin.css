@@ -117,6 +117,11 @@
     filter: brightness(1.05);
 }
 
+.admin-dashboard-body button:disabled {
+    opacity: 0.72;
+    cursor: not-allowed;
+}
+
 .admin-dashboard-body .status {
     min-height: 20px;
     color: #acb4df;
@@ -208,7 +213,9 @@
 }
 
 .admin-dashboard-body .close-confirm-modal {
-    width: min(92vw, 430px);
+    width: min(94vw, 430px);
+    max-height: calc(100dvh - 2rem);
+    overflow: auto;
     border-radius: 12px;
     border: 1px solid #2f3764;
     background: #121937;
@@ -240,6 +247,65 @@
     width: auto;
 }
 
+.admin-dashboard-body .details-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1250;
+    display: grid;
+    place-items: center;
+    background: rgba(6, 10, 24, 0.7);
+    backdrop-filter: blur(4px);
+    padding: clamp(0.5rem, 2.5vw, 1rem);
+}
+
+.admin-dashboard-body .details-modal {
+    position: relative;
+    width: min(1100px, calc(100vw - 1rem));
+    max-height: calc(100dvh - 1rem);
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    margin: 0;
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+}
+
+.admin-dashboard-body .details-modal.selected-response-panel {
+    margin: 0;
+    padding: clamp(0.7rem, 1.8vw, 1rem);
+}
+
+.admin-dashboard-body .details-modal::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+    display: none;
+}
+
+.admin-dashboard-body .details-modal-close {
+    position: sticky;
+    top: 8px;
+    left: calc(100% - 42px);
+    width: 34px;
+    height: 34px;
+    border-radius: 999px;
+    border: 1px solid rgba(140, 158, 230, 0.45);
+    background: rgba(23, 32, 66, 0.9);
+    color: #e8ecff;
+    font-size: 1.2rem;
+    line-height: 1;
+    padding: 0;
+    display: inline-grid;
+    place-items: center;
+    cursor: pointer;
+    z-index: 3;
+}
+
+.admin-dashboard-body .details-modal-close:hover {
+    filter: brightness(1.08);
+}
+
 .admin-dashboard-body .selected-response-panel {
     margin: 0 0 12px;
     padding: 12px;
@@ -267,6 +333,13 @@
     gap: 8px;
 }
 
+.admin-dashboard-body .selected-response-kpis {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
 .admin-dashboard-body .selected-response-actions button {
     width: auto;
 }
@@ -277,6 +350,23 @@
     gap: 8px 14px;
     font-size: 0.88rem;
     color: #dde4ff;
+}
+
+.admin-dashboard-body .selected-response-grid > div {
+    padding: 8px 10px;
+    border: 1px solid rgba(58, 69, 118, 0.55);
+    border-radius: 10px;
+    background: rgba(17, 24, 51, 0.75);
+}
+
+.admin-dashboard-body .detail-label {
+    display: block;
+    margin-bottom: 2px;
+    color: #9eb0e9;
+    font-size: 0.74rem;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    font-weight: 700;
 }
 
 .admin-dashboard-body .selected-response-grid .full {
@@ -328,6 +418,30 @@
     background: #212a53;
     color: #e8ecff;
     font-size: 0.75rem;
+}
+
+.admin-dashboard-body .badge-success {
+    background: rgba(65, 165, 123, 0.25);
+    border: 1px solid rgba(102, 239, 176, 0.55);
+    color: #b4ffd9;
+}
+
+.admin-dashboard-body .badge-danger {
+    background: rgba(179, 57, 96, 0.25);
+    border: 1px solid rgba(255, 130, 169, 0.55);
+    color: #ffc1d8;
+}
+
+.admin-dashboard-body .badge-warn {
+    background: rgba(165, 123, 65, 0.24);
+    border: 1px solid rgba(255, 210, 124, 0.5);
+    color: #ffe7b3;
+}
+
+.admin-dashboard-body .badge-info {
+    background: rgba(57, 115, 179, 0.22);
+    border: 1px solid rgba(120, 193, 255, 0.5);
+    color: #c7e8ff;
 }
 
 .admin-dashboard-body .meta {
@@ -386,19 +500,44 @@
     background: linear-gradient(135deg, #1f2650, #2a3471);
 }
 
-.admin-dashboard-body .delete-btn {
+.admin-dashboard-body .action-btn {
     width: auto;
-    min-width: 88px;
-    padding: 8px 10px;
+    min-height: 36px;
+    min-width: 96px;
+    padding: 8px 11px;
     font-size: 0.82rem;
+    line-height: 1.1;
+    border-radius: 9px;
+    transition: transform 0.2s ease, filter 0.2s ease, box-shadow 0.2s ease;
+}
+
+.admin-dashboard-body .action-btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+}
+
+.admin-dashboard-body .action-btn-primary {
+    background: linear-gradient(135deg, #3b4fd5, #5f72ff);
+}
+
+.admin-dashboard-body .action-btn-secondary {
+    background: linear-gradient(135deg, #1f2650, #2a3471);
+}
+
+.admin-dashboard-body .action-btn-danger {
+    background: linear-gradient(135deg, #5a213f, #8a2b48);
+}
+
+.admin-dashboard-body .action-btn-ghost {
+    background: linear-gradient(135deg, #23304f, #273960);
+}
+
+.admin-dashboard-body .delete-btn {
     background: linear-gradient(135deg, #5a213f, #8a2b48);
 }
 
 .admin-dashboard-body .view-btn {
-    width: auto;
     min-width: 88px;
-    padding: 8px 10px;
-    font-size: 0.82rem;
 }
 
 .admin-dashboard-body .row-actions {
@@ -537,6 +676,18 @@
         align-items: flex-start;
     }
 
+    .admin-dashboard-body .details-modal {
+        width: min(96vw, 740px);
+        max-height: calc(100dvh - 0.8rem);
+    }
+
+    .admin-dashboard-body .details-modal-close {
+        top: 8px;
+        right: 8px;
+        width: 32px;
+        height: 32px;
+    }
+
     .admin-dashboard-body .registration-control-buttons {
         display: grid;
         grid-template-columns: 1fr;
@@ -554,6 +705,11 @@
 
     .admin-dashboard-body .selected-response-actions button {
         width: 100%;
+    }
+
+    .admin-dashboard-body .selected-response-kpis {
+        display: grid;
+        grid-template-columns: 1fr;
     }
 
     .admin-dashboard-body .selected-response-grid {
@@ -598,6 +754,11 @@
 
     .admin-dashboard-body .delete-btn,
     .admin-dashboard-body .view-btn {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .admin-dashboard-body .action-btn {
         width: 100%;
         min-width: 0;
     }

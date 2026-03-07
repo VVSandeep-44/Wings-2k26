@@ -40,9 +40,11 @@ export default function HeroSection() {
                 loop
                 muted
                 playsInline
-                preload="metadata"
+                preload="auto"
+                poster="/assets/jpg wings.jpeg"
                 aria-hidden="true"
-                onCanPlay={() => setIsVideoReady(true)}
+                onLoadedData={() => setIsVideoReady(true)}
+                onError={() => setIsVideoReady(true)}
             >
                 <source src="/assets/herobg.optimized.mp4" type="video/mp4" />
             </video>

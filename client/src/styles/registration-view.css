@@ -1,0 +1,121 @@
+.registration-view-page {
+    min-height: 100vh;
+    padding: 28px 14px;
+    background:
+        radial-gradient(circle at 12% 0%, rgba(124, 77, 255, 0.22), transparent 36%),
+        radial-gradient(circle at 88% 8%, rgba(255, 45, 149, 0.2), transparent 34%),
+        linear-gradient(180deg, #080b1b 0%, #0f1330 100%);
+    color: #eef2ff;
+}
+
+.registration-view-shell {
+    width: min(960px, 100%);
+    margin: 0 auto;
+    border: 1px solid rgba(136, 150, 226, 0.26);
+    border-radius: 18px;
+    background: rgba(13, 18, 42, 0.86);
+    box-shadow: 0 22px 46px rgba(0, 0, 0, 0.35);
+    overflow: hidden;
+}
+
+.registration-view-head {
+    padding: clamp(1rem, 3vw, 1.4rem);
+    border-bottom: 1px solid rgba(120, 140, 220, 0.26);
+    background: linear-gradient(120deg, rgba(47, 66, 151, 0.46), rgba(31, 47, 110, 0.2));
+}
+
+.registration-view-kicker {
+    margin: 0;
+    font-size: 0.74rem;
+    letter-spacing: 0.12rem;
+    text-transform: uppercase;
+    color: #9fc7ff;
+    font-weight: 800;
+}
+
+.registration-view-head h1 {
+    margin: 0.25rem 0;
+    font-size: clamp(1.3rem, 3.4vw, 1.9rem);
+}
+
+.registration-view-head p {
+    margin: 0;
+    color: #c9d4ff;
+    font-size: 0.94rem;
+}
+
+.registration-view-state {
+    margin: 0;
+    padding: 1rem 1.2rem;
+    color: #d7defc;
+}
+
+.registration-view-state.error {
+    color: #ffadc5;
+}
+
+.registration-view-grid {
+    padding: clamp(0.9rem, 3vw, 1.2rem);
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.9rem;
+}
+
+.registration-view-card {
+    border-radius: 14px;
+    border: 1px solid rgba(114, 131, 205, 0.3);
+    background: rgba(18, 25, 55, 0.78);
+    padding: 0.9rem 1rem;
+}
+
+.registration-view-card.full {
+    grid-column: 1 / -1;
+}
+
+.registration-view-card.highlight {
+    background: linear-gradient(135deg, rgba(42, 68, 170, 0.56), rgba(44, 42, 128, 0.48));
+}
+
+.registration-view-card .label {
+    margin: 0.15rem 0 0.22rem;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04rem;
+    color: #9eb4f3;
+    font-weight: 700;
+}
+
+.registration-view-card .value {
+    margin: 0 0 0.22rem;
+    font-size: 0.95rem;
+    color: #eef2ff;
+    line-height: 1.5;
+    word-break: break-word;
+}
+
+.registration-view-card .value.mono,
+.registration-view-card .mono {
+    font-family: Consolas, 'Courier New', monospace;
+}
+
+.registration-view-footer {
+    padding: 0.7rem 1.2rem 1rem;
+    border-top: 1px solid rgba(120, 140, 220, 0.2);
+}
+
+.registration-view-footer a {
+    color: #9fd4ff;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.registration-view-footer a:hover {
+    color: #d6ecff;
+    text-decoration: underline;
+}
+
+@media (max-width: 740px) {
+    .registration-view-grid {
+        grid-template-columns: 1fr;
+    }
+}

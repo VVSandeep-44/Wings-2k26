@@ -1,5 +1,21 @@
 const validator = require("validator");
 
+const EVENT_LABEL_MAP = {
+  circuitry: "Circuitry",
+  robotics: "Robotics",
+  "web-planting-ai": "Web Planting with AI",
+  "project-expo": "Project Expo",
+  "techno-quiz": "Techno Quiz",
+  debugging: "Debugging Events",
+  "startup-pitching": "Startup Idea Pitching",
+  "paper-presentations": "Paper Presentations (PPT)",
+  "short-film": "Short Film Making",
+  "standup-comedy": "Standup Comedy",
+  "ad-making": "Ad Making",
+};
+
+const formatEventLabel = (value) => EVENT_LABEL_MAP[value] || value || "";
+
 const buildInvitationEmailHtml = ({
   name,
   email,
@@ -17,6 +33,7 @@ const buildInvitationEmailHtml = ({
   eventDateText,
   eventVenueText,
   eventRegisterUrl,
+  detailsViewUrl,
 }) => {
   const safeName = validator.escape(name || "");
   const safeEmail = validator.escape(email || "");
@@ -31,7 +48,8 @@ const buildInvitationEmailHtml = ({
   const registerUrl = String(
     eventRegisterUrl || "https://wings-2k26.onrender.com/#register"
   ).trim();
-  const safeRegisterUrl = validator.escape(registerUrl);
+  const viewUrl = String(detailsViewUrl || "").trim();
+  const safeViewUrl = validator.escape(viewUrl || registerUrl);
   const participationValue = String(participationType || "individual")
     .trim()
     .toLowerCase();
@@ -40,7 +58,12 @@ const buildInvitationEmailHtml = ({
   const safeTeamName = validator.escape(teamName || "");
   const safePaymentReference = validator.escape(paymentReference || "");
   const safeEventsText = Array.isArray(events)
-    ? validator.escape(events.join(", "))
+    ? validator.escape(
+        events
+          .map((event) => formatEventLabel(String(event || "").trim()))
+          .filter(Boolean)
+          .join(", ")
+      )
     : validator.escape(String(events || ""));
   const safeTeamMembersText = Array.isArray(teamMembers)
     ? validator.escape(
@@ -50,45 +73,9 @@ const buildInvitationEmailHtml = ({
           .join(", ")
       )
     : "";
-  const qrPayload = {
-    event: eventName || "WINGS 2k26",
-    regId: String(regId || "").trim(),
-    name: String(name || "").trim(),
-    email: String(email || "").trim(),
-    phone: String(phone || "").trim(),
-    college: String(college || "").trim(),
-    department: String(department || "").trim(),
-    year: String(year || "").trim(),
-    participationType: isTeam ? "team" : "individual",
-    teamName: String(teamName || "").trim(),
-    teamMembers: Array.isArray(teamMembers)
-      ? teamMembers.map((member) => String(member || "").trim()).filter(Boolean)
-      : [],
-    events: Array.isArray(events)
-      ? events.map((item) => String(item || "").trim()).filter(Boolean)
-      : String(events || "")
-          .split(",")
-          .map((item) => item.trim())
-          .filter(Boolean),
-    paymentReference: String(paymentReference || "").trim(),
-    issuedAt: new Date().toISOString(),
-  };
   const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(
-    JSON.stringify(qrPayload)
+    viewUrl || registerUrl
   )}`;
-
-  const teamDetailsBlocks = isTeam
-    ? `
-          <div style="padding: 10px 12px; border-bottom: 1px solid #edf1f8;">
-            <p style="margin: 0 0 3px; font-size: 11px; letter-spacing: 0.02em; text-transform: uppercase; color: #6a7693;"><strong>Team Name</strong></p>
-            <p style="margin: 0; font-size: 13px; color: #1d2742;">${safeTeamName || "N/A"}</p>
-          </div>
-          <div style="padding: 10px 12px; border-bottom: 1px solid #edf1f8;">
-            <p style="margin: 0 0 3px; font-size: 11px; letter-spacing: 0.02em; text-transform: uppercase; color: #6a7693;"><strong>Team Members</strong></p>
-            <p style="margin: 0; font-size: 13px; color: #1d2742;">${safeTeamMembersText || safeName}</p>
-          </div>
-      `
-    : "";
 
   return `
   <div style="margin: 0; padding: 24px 12px; background-color: #f3f6fb; font-family: 'Segoe UI', Arial, sans-serif; color: #1f2940;">
@@ -102,60 +89,54 @@ const buildInvitationEmailHtml = ({
       </div>
 
       <div style="padding: 24px;">
-        <div style="margin-bottom: 16px; padding: 14px 16px; border: 1px solid #dce4f6; border-radius: 10px; background: #f8fbff;">
+        <div style="margin-bottom: 16px; padding: 14px 16px; border: 1px solid #dce4f6; border-radius: 10px; background: #f8fbff; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between;">
           <p style="margin: 0; font-size: 13px; color: #2a3655;">
             <strong>Registration ID:</strong>
             <span style="display: inline-block; margin-left: 6px; padding: 3px 8px; border-radius: 999px; background: #1f3f98; color: #ffffff; font-weight: 600; letter-spacing: 0.02em;">
               ${safeRegId || "N/A"}
             </span>
           </p>
+          <a href="${safeViewUrl}" target="_blank" rel="noopener noreferrer" style="display: inline-block; padding: 8px 12px; border-radius: 8px; text-decoration: none; font-size: 12px; font-weight: 700; background: #1f3f98; color: #ffffff;">View Full Registration Details</a>
         </div>
 
-        <div style="border: 1px solid #e4e9f5; border-radius: 10px; overflow: hidden;">
-          <div style="padding: 10px 12px; border-bottom: 1px solid #edf1f8;">
-            <p style="margin: 0 0 3px; font-size: 11px; letter-spacing: 0.02em; text-transform: uppercase; color: #6a7693;"><strong>Name</strong></p>
-            <p style="margin: 0; font-size: 13px; color: #1d2742;">${safeName || "N/A"}</p>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-bottom: 12px;">
+          <div style="padding: 12px; border-radius: 10px; border: 1px solid #e4e9f5; background: #ffffff;">
+            <p style="margin: 0 0 6px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.02em; color: #6a7693;"><strong>Participant</strong></p>
+            <p style="margin: 0 0 4px; font-size: 14px; color: #1d2742; font-weight: 700;">${safeName || "N/A"}</p>
+            <p style="margin: 0; font-size: 13px; color: #3a4566;">${safeEmail || "N/A"}</p>
+            <p style="margin: 2px 0 0; font-size: 13px; color: #3a4566;">${safePhone || "N/A"}</p>
           </div>
-          <div style="padding: 10px 12px; border-bottom: 1px solid #edf1f8;">
-            <p style="margin: 0 0 3px; font-size: 11px; letter-spacing: 0.02em; text-transform: uppercase; color: #6a7693;"><strong>Email</strong></p>
-            <p style="margin: 0; font-size: 13px; color: #1d2742;">${safeEmail || "N/A"}</p>
+          <div style="padding: 12px; border-radius: 10px; border: 1px solid #e4e9f5; background: #ffffff;">
+            <p style="margin: 0 0 6px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.02em; color: #6a7693;"><strong>College</strong></p>
+            <p style="margin: 0 0 4px; font-size: 14px; color: #1d2742; font-weight: 700;">${safeCollege || "N/A"}</p>
+            <p style="margin: 0; font-size: 13px; color: #3a4566;">${safeDepartment || "N/A"} / ${safeYear || "N/A"}</p>
           </div>
-          <div style="padding: 10px 12px; border-bottom: 1px solid #edf1f8;">
-            <p style="margin: 0 0 3px; font-size: 11px; letter-spacing: 0.02em; text-transform: uppercase; color: #6a7693;"><strong>Phone</strong></p>
-            <p style="margin: 0; font-size: 13px; color: #1d2742;">${safePhone || "N/A"}</p>
+          <div style="padding: 12px; border-radius: 10px; border: 1px solid #e4e9f5; background: #ffffff;">
+            <p style="margin: 0 0 6px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.02em; color: #6a7693;"><strong>Participation</strong></p>
+            <p style="margin: 0 0 4px; font-size: 14px; color: #1d2742; font-weight: 700;">${safeParticipationLabel}</p>
+            ${isTeam ? `<p style="margin: 0; font-size: 13px; color: #3a4566;">Team: ${safeTeamName || "N/A"}</p>` : ""}
+            ${isTeam ? `<p style="margin: 2px 0 0; font-size: 13px; color: #3a4566;">Members: ${safeTeamMembersText || safeName}</p>` : ""}
           </div>
-          <div style="padding: 10px 12px; border-bottom: 1px solid #edf1f8;">
-            <p style="margin: 0 0 3px; font-size: 11px; letter-spacing: 0.02em; text-transform: uppercase; color: #6a7693;"><strong>College</strong></p>
-            <p style="margin: 0; font-size: 13px; color: #1d2742;">${safeCollege || "N/A"}</p>
+          <div style="padding: 12px; border-radius: 10px; border: 1px solid #e4e9f5; background: #ffffff;">
+            <p style="margin: 0 0 6px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.02em; color: #6a7693;"><strong>Payment</strong></p>
+            <p style="margin: 0 0 4px; font-size: 14px; color: #1d2742; font-weight: 700;">Submitted</p>
+            <p style="margin: 0; font-size: 13px; color: #3a4566;">Amount: ₹300</p>
+            <p style="margin: 2px 0 0; font-size: 13px; color: #3a4566;">Ref: ${safePaymentReference || "N/A"}</p>
           </div>
-          <div style="padding: 10px 12px; border-bottom: 1px solid #edf1f8;">
-            <p style="margin: 0 0 3px; font-size: 11px; letter-spacing: 0.02em; text-transform: uppercase; color: #6a7693;"><strong>Department / Year</strong></p>
-            <p style="margin: 0; font-size: 13px; color: #1d2742;">${safeDepartment || "N/A"} / ${safeYear || "N/A"}</p>
-          </div>
-          <div style="padding: 10px 12px; border-bottom: 1px solid #edf1f8;">
-            <p style="margin: 0 0 3px; font-size: 11px; letter-spacing: 0.02em; text-transform: uppercase; color: #6a7693;"><strong>Participation</strong></p>
-            <p style="margin: 0; font-size: 13px; color: #1d2742;">${safeParticipationLabel}</p>
-          </div>
-          ${teamDetailsBlocks}
-          <div style="padding: 10px 12px; border-bottom: 1px solid #edf1f8;">
-            <p style="margin: 0 0 3px; font-size: 11px; letter-spacing: 0.02em; text-transform: uppercase; color: #6a7693;"><strong>Selected Events</strong></p>
-            <p style="margin: 0; font-size: 13px; color: #1d2742;">${safeEventsText || "N/A"}</p>
-          </div>
-          <div style="padding: 10px 12px; border-bottom: 1px solid #edf1f8;">
-            <p style="margin: 0 0 3px; font-size: 11px; letter-spacing: 0.02em; text-transform: uppercase; color: #6a7693;"><strong>Date / Venue</strong></p>
-            <p style="margin: 0; font-size: 13px; color: #1d2742;">${safeEventDateText || "TBD"} · ${safeEventVenueText || "TBD"}</p>
-          </div>
-          <div style="padding: 10px 12px;">
-            <p style="margin: 0 0 3px; font-size: 11px; letter-spacing: 0.02em; text-transform: uppercase; color: #6a7693;"><strong>Payment</strong></p>
-            <p style="margin: 0; font-size: 13px; color: #1d2742;">₹300 · Ref: ${safePaymentReference || "N/A"} · Submitted</p>
-          </div>
+        </div>
+
+        <div style="padding: 12px; border-radius: 10px; border: 1px solid #e4e9f5; background: #ffffff; margin-bottom: 12px;">
+          <p style="margin: 0 0 6px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.02em; color: #6a7693;"><strong>Selected Events</strong></p>
+          <p style="margin: 0 0 8px; font-size: 13px; color: #1d2742;">${safeEventsText || "N/A"}</p>
+          <p style="margin: 0; font-size: 13px; color: #3a4566;">${safeEventDateText || "TBD"} · ${safeEventVenueText || "TBD"}</p>
         </div>
 
         <div style="margin-top: 18px; padding: 14px; border: 1px dashed #cfd9ef; border-radius: 10px; text-align: center; background: #fcfdff;">
-          <p style="margin: 0 0 8px; font-size: 12px; color: #5b6788;">Use this QR for registration verification at check-in</p>
-          <a href="${safeRegisterUrl}" target="_blank" rel="noopener noreferrer" style="text-decoration: none; display: inline-block;">
+          <p style="margin: 0 0 8px; font-size: 12px; color: #5b6788;">Scan this QR to open your registration details page</p>
+          <a href="${safeViewUrl}" target="_blank" rel="noopener noreferrer" style="text-decoration: none; display: inline-block;">
             <img src="${qrImageUrl}" alt="WINGS registration QR" width="150" height="150" style="display: block; border: 1px solid #dfe6f5; border-radius: 10px;" />
           </a>
+          <p style="margin: 10px 0 0; font-size: 12px; color: #5b6788;">Unable to scan? <a href="${safeViewUrl}" target="_blank" rel="noopener noreferrer" style="color: #1f3f98; font-weight: 700;">Open details page</a></p>
         </div>
 
         <p style="margin: 18px 0 0; font-size: 13px; color: #2d3958; line-height: 1.6;">

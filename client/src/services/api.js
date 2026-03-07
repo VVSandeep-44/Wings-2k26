@@ -110,8 +110,9 @@ export const adminLogout = async () => {
     });
 };
 
-export const fetchRegistrations = async (limit = 20) => {
-    const response = await fetch(buildApiUrl(`/api/registrations?limit=${limit}`), {
+export const fetchRegistrations = async (limit = 20, options = {}) => {
+    const onlyDeleted = options.onlyDeleted === true;
+    const response = await fetch(buildApiUrl(`/api/registrations?limit=${limit}&onlyDeleted=${onlyDeleted}`), {
         credentials: 'include',
         cache: 'no-store',
     });
@@ -125,17 +126,65 @@ export const fetchRegistrations = async (limit = 20) => {
     return result;
 };
 
-export const deleteRegistration = async (id) => {
-    const response = await fetch(buildApiUrl(`/api/registrations/${id}`), {
-        method: 'DELETE',
+export const deleteRegistration = async ({ id, regId } = {}) => {
+    const safeRegId = String(regId || '').trim();
+    const safeId = Number(id);
+
+    const tryDelete = async (endpoint) => {
+        const response = await fetch(buildApiUrl(endpoint), {
+            method: 'DELETE',
+            credentials: 'include',
+            cache: 'no-store',
+        });
+
+        const result = await response.json().catch(() => ({}));
+        return { response, result };
+    };
+
+    // Prefer safer regId-based soft delete when available.
+    if (safeRegId) {
+        const primary = await tryDelete(
+            `/api/registrations/by-regid/${encodeURIComponent(safeRegId)}?deletedBy=admin`
+        );
+
+        if (primary.response.ok && primary.result.success) {
+            return primary.result;
+        }
+
+        // Backward compatibility: fallback to legacy id delete endpoint.
+        if (Number.isInteger(safeId) && safeId > 0) {
+            const fallback = await tryDelete(`/api/registrations/${safeId}`);
+            if (fallback.response.ok && fallback.result.success) {
+                return fallback.result;
+            }
+            throw new Error(fallback.result.message || primary.result.message || 'Failed to delete registration');
+        }
+
+        throw new Error(primary.result.message || 'Failed to delete registration');
+    }
+
+    const legacy = await tryDelete(`/api/registrations/${safeId}`);
+    if (!legacy.response.ok || !legacy.result.success) {
+        throw new Error(legacy.result.message || 'Failed to delete registration');
+    }
+
+    return legacy.result;
+};
+
+export const restoreRegistration = async (regId, restoredBy = 'admin') => {
+    const safeRegId = encodeURIComponent(String(regId || '').trim());
+    const response = await fetch(buildApiUrl(`/api/registrations/by-regid/${safeRegId}/restore`), {
+        method: 'PATCH',
         credentials: 'include',
         cache: 'no-store',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ restoredBy }),
     });
 
     const result = await response.json().catch(() => ({}));
 
     if (!response.ok || !result.success) {
-        throw new Error(result.message || 'Failed to delete registration');
+        throw new Error(result.message || 'Failed to restore registration');
     }
 
     return result;
@@ -206,4 +255,25 @@ export const updateAdminRegistrationStatus = async (isOpen, reason = '', updated
     }
 
     return result;
+};
+
+export const fetchPublicRegistrationDetails = async (regId, token) => {
+    const safeRegId = encodeURIComponent(String(regId || '').trim());
+    const safeToken = encodeURIComponent(String(token || '').trim());
+
+    const response = await fetch(
+        buildApiUrl(`/api/public/registrations/${safeRegId}?token=${safeToken}`),
+        {
+            method: 'GET',
+            cache: 'no-store',
+        }
+    );
+
+    const result = await response.json().catch(() => ({}));
+
+    if (!response.ok || !result.success) {
+        throw new Error(result.message || 'Could not fetch registration details');
+    }
+
+    return result.data;
 };

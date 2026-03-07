@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import HomePage from './pages/HomePage';
 import AdminLoginPage from './pages/AdminLoginPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
+import RegistrantDetailsPage from './pages/RegistrantDetailsPage';
 import PageLoader from './components/PageLoader';
 
 function App() {
@@ -43,6 +44,7 @@ function App() {
                 <div className={showSite ? 'site-load-enter' : ''}>
                     <Routes>
                         <Route path="/" element={<HomePage />} />
+                        <Route path="/registration/:regId" element={<RegistrantDetailsPage />} />
                         <Route path="/admin-login" element={<AdminLoginPage />} />
                         <Route path="/admin" element={<AdminDashboardPage />} />
                         <Route path="*" element={<Navigate to="/" replace />} />

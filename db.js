@@ -107,6 +107,9 @@ const createRegistration = async (registration) => {
 
     const document = {
       id: inMemoryCounter,
+      isDeleted: false,
+      deletedAt: null,
+      deletedBy: "",
       ...registration,
     };
 
@@ -119,6 +122,9 @@ const createRegistration = async (registration) => {
 
   const document = {
     id: nextId,
+    isDeleted: false,
+    deletedAt: null,
+    deletedBy: "",
     ...registration,
   };
 
@@ -182,18 +188,45 @@ const updateRegistrationByRegId = async (regId, updates) => {
   return { changes: updateResult.modifiedCount };
 };
 
-const listRegistrations = async (limit) => {
+const listRegistrations = async (limit, options = {}) => {
+  const onlyDeleted = Boolean(options.onlyDeleted);
+
   if (inMemoryMode) {
-    return inMemoryRegistrations.slice(0, Number(limit));
+    const filtered = inMemoryRegistrations.filter((entry) => {
+      const isDeleted = entry.isDeleted === true;
+      return onlyDeleted ? isDeleted : !isDeleted;
+    });
+    return filtered.slice(0, Number(limit));
   }
 
   const collection = getRegistrationsCollection();
+  const query = onlyDeleted
+    ? { isDeleted: true }
+    : { $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }] };
+
   return collection
-    .find({})
+    .find(query)
     .sort({ createdAt: -1 })
     .limit(Number(limit))
     .project({ _id: 0 })
     .toArray();
+};
+
+const getRegistrationByRegId = async (regId) => {
+  const normalizedRegId = String(regId || "").trim();
+  if (!normalizedRegId) {
+    return null;
+  }
+
+  if (inMemoryMode) {
+    return (
+      inMemoryRegistrations.find((entry) => entry.regId === normalizedRegId) ||
+      null
+    );
+  }
+
+  const collection = getRegistrationsCollection();
+  return collection.findOne({ regId: normalizedRegId }, { projection: { _id: 0 } });
 };
 
 const getRegistrationControl = async () => {
@@ -285,13 +318,134 @@ const deleteRegistrationById = async (id) => {
   return { changes: deleteResult.deletedCount };
 };
 
+const deleteRegistrationByRegId = async (regId) => {
+  const normalizedRegId = String(regId || "").trim();
+  if (!normalizedRegId) {
+    return { changes: 0 };
+  }
+
+  if (inMemoryMode) {
+    const initialLength = inMemoryRegistrations.length;
+    inMemoryRegistrations = inMemoryRegistrations.filter(
+      (entry) => String(entry.regId || "").trim() !== normalizedRegId
+    );
+
+    return {
+      changes:
+        initialLength === inMemoryRegistrations.length ? 0 : 1,
+    };
+  }
+
+  const collection = getRegistrationsCollection();
+  const deleteResult = await collection.deleteOne({ regId: normalizedRegId });
+  return { changes: deleteResult.deletedCount };
+};
+
+const softDeleteRegistrationByRegId = async (regId, deletedBy = "admin") => {
+  const normalizedRegId = String(regId || "").trim();
+  const deletedAt = new Date().toISOString();
+  const safeDeletedBy = String(deletedBy || "admin").trim() || "admin";
+
+  if (!normalizedRegId) {
+    return { changes: 0 };
+  }
+
+  if (inMemoryMode) {
+    const index = inMemoryRegistrations.findIndex(
+      (entry) => String(entry.regId || "").trim() === normalizedRegId && entry.isDeleted !== true
+    );
+
+    if (index < 0) {
+      return { changes: 0 };
+    }
+
+    inMemoryRegistrations[index] = {
+      ...inMemoryRegistrations[index],
+      isDeleted: true,
+      deletedAt,
+      deletedBy: safeDeletedBy,
+      updatedAt: deletedAt,
+    };
+
+    return { changes: 1 };
+  }
+
+  const collection = getRegistrationsCollection();
+  const updateResult = await collection.updateOne(
+    { regId: normalizedRegId, $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }] },
+    {
+      $set: {
+        isDeleted: true,
+        deletedAt,
+        deletedBy: safeDeletedBy,
+        updatedAt: deletedAt,
+      },
+    }
+  );
+
+  return { changes: updateResult.modifiedCount };
+};
+
+const restoreRegistrationByRegId = async (regId, restoredBy = "admin") => {
+  const normalizedRegId = String(regId || "").trim();
+  const restoredAt = new Date().toISOString();
+  const safeRestoredBy = String(restoredBy || "admin").trim() || "admin";
+
+  if (!normalizedRegId) {
+    return { changes: 0 };
+  }
+
+  if (inMemoryMode) {
+    const index = inMemoryRegistrations.findIndex(
+      (entry) => String(entry.regId || "").trim() === normalizedRegId && entry.isDeleted === true
+    );
+
+    if (index < 0) {
+      return { changes: 0 };
+    }
+
+    inMemoryRegistrations[index] = {
+      ...inMemoryRegistrations[index],
+      isDeleted: false,
+      deletedAt: null,
+      deletedBy: "",
+      restoredBy: safeRestoredBy,
+      restoredAt,
+      updatedAt: restoredAt,
+    };
+
+    return { changes: 1 };
+  }
+
+  const collection = getRegistrationsCollection();
+  const updateResult = await collection.updateOne(
+    { regId: normalizedRegId, isDeleted: true },
+    {
+      $set: {
+        isDeleted: false,
+        deletedAt: null,
+        deletedBy: "",
+        restoredBy: safeRestoredBy,
+        restoredAt,
+        updatedAt: restoredAt,
+      },
+    }
+  );
+
+  return { changes: updateResult.modifiedCount };
+};
+
 module.exports = {
   initDatabase,
   createRegistration,
   updateRegistrationById,
   updateRegistrationByRegId,
   listRegistrations,
+  getRegistrationByRegId,
   deleteRegistrationById,
+  deleteRegistrationByRegId,
+  softDeleteRegistrationByRegId,
+  restoreRegistrationByRegId,
   getRegistrationControl,
   setRegistrationControl,
 };
