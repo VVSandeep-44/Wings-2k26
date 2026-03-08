@@ -1,6 +1,7 @@
 const { MongoClient } = require("mongodb");
 
 const DEFAULT_DB_NAME = "wings2k26";
+const IS_PRODUCTION = process.env.NODE_ENV === "production";
 const RAW_MONGODB_URI = process.env.MONGODB_URI || process.env.DATABASE_URL || "";
 const LOCAL_MONGODB_URI = process.env.MONGODB_URI_LOCAL || "";
 const BASE_DB_NAME = process.env.MONGODB_DB_NAME || DEFAULT_DB_NAME;
@@ -13,7 +14,6 @@ const REGISTRATIONS_COLLECTION = "registrations";
 const COUNTERS_COLLECTION = "counters";
 const SETTINGS_COLLECTION = "settings";
 const REGISTRATION_CONTROL_DOC_ID = "registrationControl";
-const IS_PRODUCTION = process.env.NODE_ENV === "production";
 const ALLOW_IN_MEMORY_FALLBACK = !IS_PRODUCTION;
 
 let client;

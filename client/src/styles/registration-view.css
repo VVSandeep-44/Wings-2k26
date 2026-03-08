@@ -1,121 +1,268 @@
 .registration-view-page {
     min-height: 100vh;
-    padding: 28px 14px;
+    padding: 26px 14px;
     background:
-        radial-gradient(circle at 12% 0%, rgba(124, 77, 255, 0.22), transparent 36%),
-        radial-gradient(circle at 88% 8%, rgba(255, 45, 149, 0.2), transparent 34%),
-        linear-gradient(180deg, #080b1b 0%, #0f1330 100%);
-    color: #eef2ff;
+        radial-gradient(circle at 12% -3%, rgba(255, 209, 102, 0.18), transparent 40%),
+        radial-gradient(circle at 88% 0%, rgba(124, 77, 255, 0.2), transparent 37%),
+        radial-gradient(circle at 92% 38%, rgba(255, 45, 149, 0.12), transparent 35%),
+        linear-gradient(180deg, #050a16 0%, #0c1230 100%);
+    color: #f3f5f8;
 }
 
 .registration-view-shell {
-    width: min(960px, 100%);
+    width: min(1120px, 100%);
     margin: 0 auto;
-    border: 1px solid rgba(136, 150, 226, 0.26);
-    border-radius: 18px;
-    background: rgba(13, 18, 42, 0.86);
-    box-shadow: 0 22px 46px rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(255, 209, 102, 0.66);
+    border-radius: 28px;
+    background: linear-gradient(135deg, #061020, #17254d);
+    box-shadow: 0 20px 48px rgba(1, 8, 20, 0.55);
     overflow: hidden;
-}
-
-.registration-view-head {
-    padding: clamp(1rem, 3vw, 1.4rem);
-    border-bottom: 1px solid rgba(120, 140, 220, 0.26);
-    background: linear-gradient(120deg, rgba(47, 66, 151, 0.46), rgba(31, 47, 110, 0.2));
-}
-
-.registration-view-kicker {
-    margin: 0;
-    font-size: 0.74rem;
-    letter-spacing: 0.12rem;
-    text-transform: uppercase;
-    color: #9fc7ff;
-    font-weight: 800;
-}
-
-.registration-view-head h1 {
-    margin: 0.25rem 0;
-    font-size: clamp(1.3rem, 3.4vw, 1.9rem);
-}
-
-.registration-view-head p {
-    margin: 0;
-    color: #c9d4ff;
-    font-size: 0.94rem;
 }
 
 .registration-view-state {
     margin: 0;
     padding: 1rem 1.2rem;
-    color: #d7defc;
 }
 
 .registration-view-state.error {
-    color: #ffadc5;
+    color: #ffd2d2;
 }
 
-.registration-view-grid {
-    padding: clamp(0.9rem, 3vw, 1.2rem);
+.admit-ticket {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.9rem;
+    grid-template-columns: 328px 1fr;
+    min-height: 520px;
 }
 
-.registration-view-card {
-    border-radius: 14px;
-    border: 1px solid rgba(114, 131, 205, 0.3);
-    background: rgba(18, 25, 55, 0.78);
-    padding: 0.9rem 1rem;
+.admit-ticket-left {
+    padding: 2.2rem 1.4rem;
+    border-right: 1px dashed rgba(255, 209, 102, 0.45);
+    background:
+        radial-gradient(circle at 50% 16%, rgba(255, 45, 149, 0.12), transparent 44%),
+        linear-gradient(180deg, rgba(4, 17, 38, 0.95), rgba(5, 14, 35, 0.95));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 0.8rem;
+    text-align: center;
 }
 
-.registration-view-card.full {
-    grid-column: 1 / -1;
+.admit-logo {
+    width: min(150px, 65%);
+    height: auto;
+    filter: drop-shadow(0 10px 22px rgba(0, 0, 0, 0.45));
 }
 
-.registration-view-card.highlight {
-    background: linear-gradient(135deg, rgba(42, 68, 170, 0.56), rgba(44, 42, 128, 0.48));
+.admit-brand {
+    margin: 0;
+    color: #ffd166;
+    font-size: clamp(2.1rem, 4vw, 3.1rem);
+    font-weight: 900;
+    letter-spacing: 0.07em;
+    line-height: 1;
 }
 
-.registration-view-card .label {
-    margin: 0.15rem 0 0.22rem;
-    font-size: 0.72rem;
+.admit-year {
+    margin: 0.15rem 0 0;
+    color: #f8fafc;
+    font-size: clamp(1.8rem, 2.5vw, 2.6rem);
+    font-weight: 800;
+}
+
+.admit-chip {
+    margin: 0.4rem 0 0;
+    border: 1px solid rgba(255, 209, 102, 0.45);
+    border-radius: 10px;
+    padding: 0.62rem 1.35rem;
+    color: #edf2ff;
+    letter-spacing: 0.14em;
+    font-weight: 800;
+    font-size: 0.82rem;
+}
+
+.admit-ticket-right {
+    position: relative;
+    padding: 2.1rem 2.2rem 1.45rem;
+    background:
+        radial-gradient(circle at 56% 47%, rgba(255, 209, 102, 0.08), transparent 42%),
+        radial-gradient(circle at 74% 16%, rgba(124, 77, 255, 0.12), transparent 34%),
+        linear-gradient(120deg, rgba(11, 34, 68, 0.96), rgba(27, 42, 85, 0.96));
+}
+
+.admit-ticket-right::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: url('/assets/Wingslogo.png') center 52% / 52% no-repeat;
+    opacity: 0.07;
+    pointer-events: none;
+}
+
+.admit-ticket-right h1 {
+    position: relative;
+    margin: 0.12rem 0 1.06rem;
+    font-size: clamp(2.1rem, 4.8vw, 3.7rem);
+    font-weight: 900;
+    line-height: 1.03;
+    max-width: calc(100% - 212px);
+    letter-spacing: 0.01em;
+}
+
+.admit-qr {
+    position: absolute;
+    top: 1.1rem;
+    right: 1.1rem;
+    width: 170px;
+    height: 170px;
+    border-radius: 12px;
+    border: 6px solid #f6f8fe;
+    background: #ffffff;
+}
+
+.admit-label {
+    position: relative;
+    margin: 0.45rem 0 0.12rem;
+    font-size: 0.7rem;
     text-transform: uppercase;
-    letter-spacing: 0.04rem;
-    color: #9eb4f3;
-    font-weight: 700;
+    letter-spacing: 0.16em;
+    color: #ffd166;
+    font-weight: 800;
 }
 
-.registration-view-card .value {
-    margin: 0 0 0.22rem;
-    font-size: 0.95rem;
-    color: #eef2ff;
-    line-height: 1.5;
+.admit-short-id {
+    margin: 0;
+    font-size: clamp(2.15rem, 4vw, 3.2rem);
+    line-height: 0.98;
+    font-weight: 900;
+    color: #ffffff;
+    letter-spacing: 0.01em;
+}
+
+.admit-value {
+    position: relative;
+    margin: 0;
+    color: #eef4ff;
+    font-size: 1.05rem;
+    line-height: 1.33;
+    font-weight: 500;
     word-break: break-word;
 }
 
-.registration-view-card .value.mono,
-.registration-view-card .mono {
+.admit-value.mono,
+.admit-meta {
     font-family: Consolas, 'Courier New', monospace;
+}
+
+.admit-meta-row {
+    margin-top: 0.95rem;
+    padding-top: 0.82rem;
+    border-top: 1px solid rgba(194, 209, 241, 0.22);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.admit-status {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 36px;
+    padding: 0.22rem 0.82rem;
+    border-radius: 999px;
+    border: 1px solid rgba(210, 218, 230, 0.25);
+    background: rgba(255, 255, 255, 0.04);
+    font-family: 'Segoe UI', Tahoma, sans-serif;
+    font-size: 1.32rem;
+    line-height: 1;
+    font-weight: 700;
+    color: #d2dae6;
+}
+
+.admit-status.verified {
+    color: #42dd93;
+    border-color: rgba(66, 221, 147, 0.4);
+    background: rgba(66, 221, 147, 0.1);
+}
+
+.admit-status.failed {
+    color: #ff7f7f;
+    border-color: rgba(255, 127, 127, 0.4);
+    background: rgba(255, 127, 127, 0.11);
+}
+
+.admit-status.submitted {
+    color: #ffd166;
+    border-color: rgba(255, 209, 102, 0.42);
+    background: rgba(255, 209, 102, 0.11);
+}
+
+.admit-details-grid {
+    margin-top: 1.08rem;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.78rem 1.02rem;
 }
 
 .registration-view-footer {
     padding: 0.7rem 1.2rem 1rem;
-    border-top: 1px solid rgba(120, 140, 220, 0.2);
+    border-top: 1px solid rgba(223, 184, 93, 0.34);
+    background: rgba(3, 11, 25, 0.45);
 }
 
 .registration-view-footer a {
-    color: #9fd4ff;
+    color: #f1d38c;
     font-weight: 700;
     text-decoration: none;
 }
 
 .registration-view-footer a:hover {
-    color: #d6ecff;
+    color: #ffe9b9;
     text-decoration: underline;
 }
 
-@media (max-width: 740px) {
-    .registration-view-grid {
+@media (max-width: 980px) {
+    .admit-ticket {
+        grid-template-columns: 1fr;
+    }
+
+    .admit-ticket-left {
+        border-right: 0;
+        border-bottom: 1px dashed rgba(255, 209, 102, 0.5);
+        padding: 1.45rem 1rem;
+        gap: 0.55rem;
+    }
+
+    .admit-ticket-right {
+        padding: 1.15rem;
+    }
+
+    .admit-ticket-right h1 {
+        margin-top: 0.56rem;
+        max-width: 100%;
+        padding-right: 124px;
+        font-size: clamp(1.68rem, 6.2vw, 2.58rem);
+    }
+
+    .admit-qr {
+        width: 106px;
+        height: 106px;
+        border-width: 4px;
+    }
+
+    .admit-short-id {
+        font-size: clamp(1.68rem, 7.5vw, 2.25rem);
+    }
+
+    .admit-status {
+        min-height: 34px;
+        font-size: 1.06rem;
+        padding: 0.2rem 0.66rem;
+    }
+
+    .admit-details-grid {
         grid-template-columns: 1fr;
     }
 }

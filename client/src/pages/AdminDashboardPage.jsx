@@ -495,7 +495,7 @@ export default function AdminDashboardPage() {
 
     const handleLimitChange = async (newLimit) => {
         setLimit(newLimit);
-        const data = await loadRegistrations(newLimit);
+        const data = await loadRegistrations(newLimit, isTrashView);
         if (data) applyFilters(data, searchQuery, eventFilter, sortOrder);
     };
 
@@ -597,7 +597,8 @@ export default function AdminDashboardPage() {
 
         try {
             await updateRegistrationPaymentStatus(row.id, paymentStatus, 'admin');
-            const data = await loadRegistrations(limit);
+            const viewForReload = row?.isDeleted === true ? true : isTrashView;
+            const data = await loadRegistrations(limit, viewForReload);
             if (data) {
                 applyFilters(data, searchQuery, eventFilter, sortOrder);
                 const updatedRow = data.find((item) => item.id === row.id) || null;
@@ -680,6 +681,7 @@ export default function AdminDashboardPage() {
                         <div className="controls-menu-wrap">
                             <button
                                 id="menuBtn"
+                                type="button"
                                 className="btn-secondary menu-btn"
                                 aria-expanded={menuOpen}
                                 onClick={() => setMenuOpen(!menuOpen)}
@@ -704,7 +706,7 @@ export default function AdminDashboardPage() {
                                     <option value="newest">Newest First</option>
                                     <option value="oldest">Oldest First</option>
                                 </select>
-                                <button id="refreshBtn" onClick={handleRefresh}>
+                                <button id="refreshBtn" type="button" onClick={handleRefresh}>
                                     Refresh Data
                                 </button>
                                 <button
@@ -716,6 +718,7 @@ export default function AdminDashboardPage() {
                                 </button>
                                 <button
                                     id="exportCsvBtn"
+                                    type="button"
                                     className="btn-secondary"
                                     onClick={() => handleExport('csv')}
                                 >
@@ -723,12 +726,13 @@ export default function AdminDashboardPage() {
                                 </button>
                                 <button
                                     id="exportExcelBtn"
+                                    type="button"
                                     className="btn-secondary"
                                     onClick={() => handleExport('excel')}
                                 >
                                     Export Excel
                                 </button>
-                                <button id="logoutBtn" className="logout-btn" onClick={handleLogout}>
+                                <button id="logoutBtn" type="button" className="logout-btn" onClick={handleLogout}>
                                     Logout
                                 </button>
                             </div>
@@ -1055,6 +1059,7 @@ export default function AdminDashboardPage() {
                                                                 Abstract PDFs
                                                             </button>
                                                             <button
+                                                                type="button"
                                                                 className="action-btn action-btn-danger delete-btn"
                                                                 disabled={deletingId === (row.regId || row.id)}
                                                                 onClick={() => handleDelete(row)}

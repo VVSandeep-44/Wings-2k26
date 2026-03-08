@@ -31,6 +31,33 @@ const formatStatus = (value) => {
     return raw.charAt(0).toUpperCase() + raw.slice(1);
 };
 
+const getTicketStatus = (data) => {
+    const paymentStatus = String(data?.paymentStatus || '').toLowerCase();
+    const validationStatus = String(data?.validationStatus || '').toLowerCase();
+
+    if (paymentStatus === 'verified' || validationStatus === 'verified' || validationStatus === 'approved') {
+        return 'Verified';
+    }
+
+    if (paymentStatus === 'failed' || validationStatus === 'failed' || validationStatus === 'rejected') {
+        return 'Failed';
+    }
+
+    return 'Submitted';
+};
+
+const getShortId = (regId) => {
+    const raw = String(regId || '').trim();
+    if (!raw) return '-';
+
+    const digitsOnly = raw.replace(/\D+/g, '');
+    if (digitsOnly.length >= 5) {
+        return digitsOnly.slice(-5);
+    }
+
+    return raw.length > 5 ? raw.slice(-5) : raw;
+};
+
 export default function RegistrantDetailsPage() {
     const { regId = '' } = useParams();
     const [searchParams] = useSearchParams();
@@ -76,76 +103,76 @@ export default function RegistrantDetailsPage() {
         [data]
     );
 
+    const ticketStatus = useMemo(() => getTicketStatus(data), [data]);
+    const shortId = useMemo(() => getShortId(data?.regId), [data]);
+    const qrSource = useMemo(() => {
+        if (typeof window === 'undefined') return '';
+        const value = window.location.href;
+        return `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(value)}`;
+    }, []);
+
     return (
         <main className="registration-view-page">
             <div className="registration-view-shell">
-                <header className="registration-view-head">
-                    <p className="registration-view-kicker">WINGS 2k26</p>
-                    <h1>Registration Details</h1>
-                    <p>Present this page at check-in for quick verification.</p>
-                </header>
-
                 {loading ? <p className="registration-view-state">Loading your details...</p> : null}
                 {!loading && error ? <p className="registration-view-state error">{error}</p> : null}
 
                 {!loading && !error && data ? (
-                    <section className="registration-view-grid">
-                        <article className="registration-view-card highlight">
-                            <p className="label">Registration ID</p>
-                            <p className="value mono">{data.regId || '-'}</p>
-                        </article>
+                    <section className="admit-ticket" aria-label="WINGS admit card">
+                        <aside className="admit-ticket-left">
+                            <img src="/assets/pydah-logo.jpeg" alt="WINGS logo" className="admit-logo" />
+                            <p className="admit-brand">WINGS</p>
+                            <p className="admit-year">2026</p>
+                            <p className="admit-chip">ADMIT CARD</p>
+                        </aside>
 
-                        <article className="registration-view-card">
-                            <p className="label">Name</p>
-                            <p className="value">{data.name || '-'}</p>
-                            <p className="label">Email</p>
-                            <p className="value">{data.email || '-'}</p>
-                            <p className="label">Phone</p>
-                            <p className="value">{data.phone || '-'}</p>
-                        </article>
+                        <section className="admit-ticket-right">
+                            <img src={qrSource} alt="Registration QR" className="admit-qr" />
 
-                        <article className="registration-view-card">
-                            <p className="label">College</p>
-                            <p className="value">{data.college || '-'}</p>
-                            <p className="label">Department / Year</p>
-                            <p className="value">{data.department || '-'} / {data.year || '-'}</p>
-                        </article>
+                            <p className="admit-label">Participant Name</p>
+                            <h1>{data.name || '-'}</h1>
 
-                        <article className="registration-view-card">
-                            <p className="label">Participation</p>
-                            <p className="value">{formatStatus(data.participationType)}</p>
-                            <p className="label">Team Name</p>
-                            <p className="value">{data.teamName || '-'}</p>
-                            <p className="label">Team Members</p>
-                            <p className="value">{(data.teamMembers || []).join(', ') || '-'}</p>
-                        </article>
+                            <p className="admit-label">Short ID</p>
+                            <p className="admit-short-id">{shortId}</p>
 
-                        <article className="registration-view-card full">
-                            <p className="label">Selected Events</p>
-                            <p className="value">{eventList.join(', ') || '-'}</p>
-                        </article>
+                            <p className="admit-label">College</p>
+                            <p className="admit-value">{data.college || '-'}</p>
 
-                        <article className="registration-view-card">
-                            <p className="label">Payment Reference</p>
-                            <p className="value mono">{data.paymentReference || '-'}</p>
-                            <p className="label">Payment Status</p>
-                            <p className="value">{formatStatus(data.paymentStatus)}</p>
-                            <p className="label">Payment Verified At</p>
-                            <p className="value">
-                                {String(data.paymentStatus || '').toLowerCase() === 'verified'
-                                    ? formatDate(data.paymentVerifiedAt)
-                                    : ''}
-                            </p>
-                        </article>
+                            <p className="admit-label">Registered Events</p>
+                            <p className="admit-value">{eventList.join(', ') || '-'}</p>
 
-                        <article className="registration-view-card">
-                            <p className="label">Validation</p>
-                            <p className="value">{formatStatus(data.validationStatus)}</p>
-                            <p className="label">Invitation</p>
-                            <p className="value">{formatStatus(data.invitationStatus)}</p>
-                            <p className="label">Registered At</p>
-                            <p className="value">{formatDate(data.createdAt)}</p>
-                        </article>
+                            <div className="admit-meta-row">
+                                <span className="admit-meta">ID: {data.regId || '-'}</span>
+                                <span className={`admit-status ${ticketStatus.toLowerCase()}`}>Status: {ticketStatus}</span>
+                            </div>
+
+                            <div className="admit-details-grid">
+                                <div>
+                                    <p className="admit-label">Email</p>
+                                    <p className="admit-value">{data.email || '-'}</p>
+                                </div>
+                                <div>
+                                    <p className="admit-label">Phone</p>
+                                    <p className="admit-value">{data.phone || '-'}</p>
+                                </div>
+                                <div>
+                                    <p className="admit-label">Department / Year</p>
+                                    <p className="admit-value">{data.department || '-'} / {data.year || '-'}</p>
+                                </div>
+                                <div>
+                                    <p className="admit-label">Participation</p>
+                                    <p className="admit-value">{formatStatus(data.participationType)}</p>
+                                </div>
+                                <div>
+                                    <p className="admit-label">Payment Ref</p>
+                                    <p className="admit-value mono">{data.paymentReference || '-'}</p>
+                                </div>
+                                <div>
+                                    <p className="admit-label">Registered At</p>
+                                    <p className="admit-value">{formatDate(data.createdAt)}</p>
+                                </div>
+                            </div>
+                        </section>
                     </section>
                 ) : null}
 
