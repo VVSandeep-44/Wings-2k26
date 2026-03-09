@@ -413,7 +413,7 @@ export default function RegistrationSection() {
                         </p>
 
                         <div className="technical-details-fields">
-                            <label htmlFor="technicalEventTopic">Topic Chosen *</label>
+                            <label htmlFor="technicalEventTopic">Project Title *</label>
                             <input
                                 id="technicalEventTopic"
                                 type="text"
