@@ -63,7 +63,6 @@ export default function RegistrationSection() {
         department: '',
         year: '',
         participationType: 'individual',
-        teamName: '',
         teammate2: '',
         teammate3: '',
         paymentReference: '',
@@ -288,12 +287,6 @@ export default function RegistrationSection() {
         }
 
         if (formData.participationType === 'team') {
-            if (!formData.teamName.trim()) {
-                setStatusMessage('Please enter a team name for team registration.');
-                setStatusType('error');
-                return;
-            }
-
             const teammates = [formData.teammate2, formData.teammate3]
                 .map((member) => member.trim())
                 .filter(Boolean);
@@ -337,7 +330,7 @@ export default function RegistrationSection() {
             year: formData.year,
             events: selectedEvents,
             participationType: formData.participationType,
-            teamName: formData.participationType === 'team' ? formData.teamName.trim() : '',
+            teamName: '',
             teamMembers:
                 formData.participationType === 'team'
                     ? [formData.name.trim(), formData.teammate2.trim(), formData.teammate3.trim()]
@@ -380,7 +373,6 @@ export default function RegistrationSection() {
                 department: '',
                 year: '',
                 participationType: 'individual',
-                teamName: '',
                 teammate2: '',
                 teammate3: '',
                 paymentReference: '',
@@ -670,15 +662,6 @@ export default function RegistrationSection() {
 
                                 {formData.participationType === 'team' ? (
                                     <div className="team-fields">
-                                        <input
-                                            type="text"
-                                            id="teamName"
-                                            name="teamName"
-                                            placeholder="Team name"
-                                            required
-                                            value={formData.teamName}
-                                            onChange={handleInputChange}
-                                        />
                                         <input
                                             type="text"
                                             id="teammate2"

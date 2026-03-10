@@ -31,11 +31,11 @@
 .admit-ticket {
     display: grid;
     grid-template-columns: 328px 1fr;
-    min-height: 520px;
+    min-height: 430px;
 }
 
 .admit-ticket-left {
-    padding: 2.2rem 1.4rem;
+    padding: 1.6rem 1.2rem;
     border-right: 1px dashed rgba(255, 209, 102, 0.45);
     background:
         radial-gradient(circle at 50% 16%, rgba(255, 45, 149, 0.12), transparent 44%),
@@ -49,7 +49,7 @@
 }
 
 .admit-logo {
-    width: min(150px, 65%);
+    width: min(132px, 62%);
     height: auto;
     filter: drop-shadow(0 10px 22px rgba(0, 0, 0, 0.45));
 }
@@ -57,24 +57,24 @@
 .admit-brand {
     margin: 0;
     color: #ffd166;
-    font-size: clamp(2.1rem, 4vw, 3.1rem);
+    font-size: clamp(1.9rem, 3.6vw, 2.7rem);
     font-weight: 900;
     letter-spacing: 0.07em;
     line-height: 1;
 }
 
 .admit-year {
-    margin: 0.15rem 0 0;
+    margin: 0;
     color: #f8fafc;
-    font-size: clamp(1.8rem, 2.5vw, 2.6rem);
+    font-size: clamp(1.6rem, 2.2vw, 2.2rem);
     font-weight: 800;
 }
 
 .admit-chip {
-    margin: 0.4rem 0 0;
+    margin: 0.2rem 0 0;
     border: 1px solid rgba(255, 209, 102, 0.45);
     border-radius: 10px;
-    padding: 0.62rem 1.35rem;
+    padding: 0.52rem 1.15rem;
     color: #edf2ff;
     letter-spacing: 0.14em;
     font-weight: 800;
@@ -83,7 +83,7 @@
 
 .admit-ticket-right {
     position: relative;
-    padding: 2.1rem 2.2rem 1.45rem;
+    padding: 1.35rem 1.7rem 1rem;
     background:
         radial-gradient(circle at 56% 47%, rgba(255, 209, 102, 0.08), transparent 42%),
         radial-gradient(circle at 74% 16%, rgba(124, 77, 255, 0.12), transparent 34%),
@@ -101,8 +101,8 @@
 
 .admit-ticket-right h1 {
     position: relative;
-    margin: 0.12rem 0 1.06rem;
-    font-size: clamp(2.1rem, 4.8vw, 3.7rem);
+    margin: 0.08rem 0 0.78rem;
+    font-size: clamp(1.75rem, 4vw, 3rem);
     font-weight: 900;
     line-height: 1.03;
     max-width: calc(100% - 212px);
@@ -113,8 +113,8 @@
     position: absolute;
     top: 1.1rem;
     right: 1.1rem;
-    width: 170px;
-    height: 170px;
+    width: 138px;
+    height: 138px;
     border-radius: 12px;
     border: 6px solid #f6f8fe;
     background: #ffffff;
@@ -122,29 +122,20 @@
 
 .admit-label {
     position: relative;
-    margin: 0.45rem 0 0.12rem;
-    font-size: 0.7rem;
+    margin: 0.35rem 0 0.08rem;
+    font-size: 0.66rem;
     text-transform: uppercase;
     letter-spacing: 0.16em;
     color: #ffd166;
     font-weight: 800;
 }
 
-.admit-short-id {
-    margin: 0;
-    font-size: clamp(2.15rem, 4vw, 3.2rem);
-    line-height: 0.98;
-    font-weight: 900;
-    color: #ffffff;
-    letter-spacing: 0.01em;
-}
-
 .admit-value {
     position: relative;
     margin: 0;
     color: #eef4ff;
-    font-size: 1.05rem;
-    line-height: 1.33;
+    font-size: 0.98rem;
+    line-height: 1.28;
     font-weight: 500;
     word-break: break-word;
 }
@@ -155,8 +146,8 @@
 }
 
 .admit-meta-row {
-    margin-top: 0.95rem;
-    padding-top: 0.82rem;
+    margin-top: 0.6rem;
+    padding-top: 0.58rem;
     border-top: 1px solid rgba(194, 209, 241, 0.22);
     display: flex;
     align-items: center;
@@ -169,13 +160,13 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-height: 36px;
-    padding: 0.22rem 0.82rem;
+    min-height: 32px;
+    padding: 0.2rem 0.7rem;
     border-radius: 999px;
     border: 1px solid rgba(210, 218, 230, 0.25);
     background: rgba(255, 255, 255, 0.04);
     font-family: 'Segoe UI', Tahoma, sans-serif;
-    font-size: 1.32rem;
+    font-size: 1.12rem;
     line-height: 1;
     font-weight: 700;
     color: #d2dae6;
@@ -200,10 +191,10 @@
 }
 
 .admit-details-grid {
-    margin-top: 1.08rem;
+    margin-top: 0.72rem;
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.78rem 1.02rem;
+    gap: 0.56rem 0.85rem;
 }
 
 .registration-view-footer {
@@ -240,20 +231,16 @@
     }
 
     .admit-ticket-right h1 {
-        margin-top: 0.56rem;
+        margin-top: 0.45rem;
         max-width: 100%;
-        padding-right: 124px;
-        font-size: clamp(1.68rem, 6.2vw, 2.58rem);
+        padding-right: 110px;
+        font-size: clamp(1.5rem, 5.8vw, 2.3rem);
     }
 
     .admit-qr {
-        width: 106px;
-        height: 106px;
+        width: 92px;
+        height: 92px;
         border-width: 4px;
-    }
-
-    .admit-short-id {
-        font-size: clamp(1.68rem, 7.5vw, 2.25rem);
     }
 
     .admit-status {

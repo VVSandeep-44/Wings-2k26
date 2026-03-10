@@ -46,18 +46,6 @@ const getTicketStatus = (data) => {
     return 'Submitted';
 };
 
-const getShortId = (regId) => {
-    const raw = String(regId || '').trim();
-    if (!raw) return '-';
-
-    const digitsOnly = raw.replace(/\D+/g, '');
-    if (digitsOnly.length >= 5) {
-        return digitsOnly.slice(-5);
-    }
-
-    return raw.length > 5 ? raw.slice(-5) : raw;
-};
-
 export default function RegistrantDetailsPage() {
     const { regId = '' } = useParams();
     const [searchParams] = useSearchParams();
@@ -104,7 +92,10 @@ export default function RegistrantDetailsPage() {
     );
 
     const ticketStatus = useMemo(() => getTicketStatus(data), [data]);
-    const shortId = useMemo(() => getShortId(data?.regId), [data]);
+    const isTeamRegistration = useMemo(
+        () => String(data?.participationType || '').toLowerCase() === 'team',
+        [data]
+    );
     const qrSource = useMemo(() => {
         if (typeof window === 'undefined') return '';
         const value = window.location.href;
@@ -131,9 +122,6 @@ export default function RegistrantDetailsPage() {
 
                             <p className="admit-label">Participant Name</p>
                             <h1>{data.name || '-'}</h1>
-
-                            <p className="admit-label">Short ID</p>
-                            <p className="admit-short-id">{shortId}</p>
 
                             <p className="admit-label">College</p>
                             <p className="admit-value">{data.college || '-'}</p>
@@ -163,6 +151,18 @@ export default function RegistrantDetailsPage() {
                                     <p className="admit-label">Participation</p>
                                     <p className="admit-value">{formatStatus(data.participationType)}</p>
                                 </div>
+                                {isTeamRegistration ? (
+                                    <>
+                                        <div>
+                                            <p className="admit-label">Team Name</p>
+                                            <p className="admit-value">{data.teamName || '-'}</p>
+                                        </div>
+                                        <div>
+                                            <p className="admit-label">Team Members</p>
+                                            <p className="admit-value">{(data.teamMembers || []).join(', ') || '-'}</p>
+                                        </div>
+                                    </>
+                                ) : null}
                                 <div>
                                     <p className="admit-label">Payment Ref</p>
                                     <p className="admit-value mono">{data.paymentReference || '-'}</p>

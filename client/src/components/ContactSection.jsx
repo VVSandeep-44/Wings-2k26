@@ -12,9 +12,10 @@ export default function ContactSection() {
                         <i className="fas fa-phone"></i>
                         <p>
                             Student Coordinators:<br />
+                            L. GANESH (Engineering) - <a href="tel:+919059245680">9059245680</a><br />
                             P. SAI TEJA (Pharmacy) - <a href="tel:+918463906115">8463906115</a><br />
-                            Y. DORA (Degree) - <a href="tel:+919618172575">9618172575</a><br />
-                            L. GANESH (Engineering) - <a href="tel:+919059245680">9059245680</a>
+                            Y. DORA (Degree) - <a href="tel:+919618172575">9618172575</a>
+                            
                         </p>
                     </div>
                     <div className="contact-item">

@@ -247,6 +247,193 @@ const buildSingleRegistrationPdf = async (row, filename) => {
     doc.save(filename);
 };
 
+const buildAdmitCardHtml = (row) => {
+    const events = (row?.events || []).map((e) => formatEventName(e)).join(', ') || '-';
+    const isTeam = String(row?.participationType || '').toLowerCase() === 'team';
+    const payStatus = String(row?.paymentStatus || 'submitted').toLowerCase();
+    const valStatus = String(row?.validationStatus || 'pending').toLowerCase();
+    let ticketStatus = 'Submitted';
+    if (payStatus === 'verified' || valStatus === 'verified' || valStatus === 'approved') ticketStatus = 'Verified';
+    else if (payStatus === 'failed' || valStatus === 'failed' || valStatus === 'rejected') ticketStatus = 'Failed';
+    const esc = (v) => String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    const statusClass = ticketStatus.toLowerCase();
+    const teamHtml = isTeam ? `
+        <div class="field"><span class="lbl" style="display:block;font-size:9px;font-weight:600;color:#55567a;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Team Name</span><span class="val" style="display:block;font-size:12px;font-weight:500;color:#d0d0e0">${esc(row?.teamName)}</span></div>
+        <div class="field"><span class="lbl" style="display:block;font-size:9px;font-weight:600;color:#55567a;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Team Members</span><span class="val" style="display:block;font-size:12px;font-weight:500;color:#d0d0e0">${esc((row?.teamMembers || []).join(', '))}</span></div>
+    ` : '';
+
+    return `<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"><div class="card" style="display:flex;width:720px;min-height:420px;border-radius:20px;overflow:hidden;position:relative;background:#0c0f1e;border:1px solid rgba(212,175,55,.25);box-shadow:0 0 60px rgba(212,175,55,.08),0 20px 60px rgba(0,0,0,.5);font-family:'Inter',system-ui,-apple-system,sans-serif">
+<div style="position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,#d4af37,#f5d76e,#d4af37)"></div>
+<div style="position:absolute;bottom:0;left:0;right:0;height:4px;background:linear-gradient(90deg,#d4af37,#f5d76e,#d4af37)"></div>
+<div style="width:190px;background:linear-gradient(180deg,#0e1225,#101428);display:flex;flex-direction:column;align-items:center;padding:36px 20px 28px;border-right:1px solid rgba(212,175,55,.15);position:relative"><div style="position:absolute;right:0;top:40px;bottom:40px;width:1px;background:linear-gradient(180deg,transparent,rgba(212,175,55,.4),transparent)"></div>
+<div style="width:120px;height:120px;border-radius:16px;overflow:hidden;border:2px solid rgba(212,175,55,.3);margin-bottom:20px;box-shadow:0 4px 20px rgba(0,0,0,.4)"><img src="/assets/PydahFlag.png" style="width:100%;height:100%;object-fit:cover" crossorigin="anonymous"></div>
+<div style="font-size:28px;font-weight:800;color:#d4af37;letter-spacing:3px">WINGS</div>
+<div style="font-size:14px;font-weight:600;color:#8a8aa0;letter-spacing:6px;margin-top:2px">2 0 2 6</div>
+<div style="margin-top:18px;padding:6px 22px;border-radius:8px;font-size:10px;font-weight:700;letter-spacing:2px;background:#d4af37;color:#0c0f1e">ADMIT CARD</div>
+<div style="margin-top:auto;font-size:8px;color:#55567a;letter-spacing:1px;text-align:center;line-height:1.5">PYDAH COLLEGE<br>OF ENGINEERING</div>
+</div>
+<div style="flex:1;padding:32px 36px 24px;display:flex;flex-direction:column">
+<div style="font-size:26px;font-weight:800;color:#fff;line-height:1.2;margin-bottom:4px">${esc(row?.name)}</div>
+<div style="width:60px;height:3px;background:#d4af37;border-radius:2px;margin:8px 0 14px"></div>
+<div style="display:flex;gap:28px;align-items:center;margin-bottom:16px">
+<span style="font-size:11px;font-weight:600;color:#d4af37;letter-spacing:1px">REG ID: ${esc(row?.regId)}</span>
+<span style="font-size:11px;font-weight:700;letter-spacing:1px;padding:3px 12px;border-radius:6px;${statusClass === 'verified' ? 'color:#4ade80;background:rgba(74,222,128,.1)' : statusClass === 'failed' ? 'color:#f87171;background:rgba(248,113,113,.1)' : 'color:#facc15;background:rgba(250,204,21,.1)'}">&#9679; ${ticketStatus.toUpperCase()}</span>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px 24px;flex:1">
+<div class="field"><span class="lbl" style="display:block;font-size:9px;font-weight:600;color:#55567a;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">College</span><span class="val" style="display:block;font-size:12px;font-weight:500;color:#d0d0e0">${esc(row?.college)}</span></div>
+<div class="field"><span class="lbl" style="display:block;font-size:9px;font-weight:600;color:#55567a;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Events</span><span class="val" style="display:block;font-size:12px;font-weight:500;color:#d0d0e0">${esc(events)}</span></div>
+<div class="field"><span class="lbl" style="display:block;font-size:9px;font-weight:600;color:#55567a;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Email</span><span class="val" style="display:block;font-size:12px;font-weight:500;color:#d0d0e0">${esc(row?.email)}</span></div>
+<div class="field"><span class="lbl" style="display:block;font-size:9px;font-weight:600;color:#55567a;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Phone</span><span class="val" style="display:block;font-size:12px;font-weight:500;color:#d0d0e0">${esc(row?.phone)}</span></div>
+<div class="field"><span class="lbl" style="display:block;font-size:9px;font-weight:600;color:#55567a;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Department / Year</span><span class="val" style="display:block;font-size:12px;font-weight:500;color:#d0d0e0">${esc(row?.department)} / ${esc(row?.year)}</span></div>
+<div class="field"><span class="lbl" style="display:block;font-size:9px;font-weight:600;color:#55567a;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Participation</span><span class="val" style="display:block;font-size:12px;font-weight:500;color:#d0d0e0">${esc(row?.participationType || 'Individual')}</span></div>
+${teamHtml}
+<div class="field"><span class="lbl" style="display:block;font-size:9px;font-weight:600;color:#55567a;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Payment Ref</span><span class="val" style="display:block;font-size:12px;font-weight:500;color:#d0d0e0">${esc(row?.paymentReference)}</span></div>
+<div class="field"><span class="lbl" style="display:block;font-size:9px;font-weight:600;color:#55567a;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Registered At</span><span class="val" style="display:block;font-size:12px;font-weight:500;color:#d0d0e0">${esc(formatDate(row?.createdAt))}</span></div>
+</div>
+<div style="margin-top:auto;padding-top:14px;border-top:1px solid rgba(212,175,55,.12);font-size:8px;color:#44455a;line-height:1.4">This card must be presented at the venue for entry. WINGS 2k26 — National Level Technical Symposium, PYDAH College of Engineering.</div>
+</div>
+</div>`;
+};
+
+const downloadAdmitCard = async (row) => {
+    const [html2canvas, { jsPDF }] = await Promise.all([
+        import('html2canvas').then((m) => m.default),
+        import('jspdf'),
+    ]);
+
+    const container = document.createElement('div');
+    container.style.cssText = 'position:fixed;left:-9999px;top:0;z-index:-1;';
+    container.innerHTML = buildAdmitCardHtml(row);
+    document.body.appendChild(container);
+
+    const cardEl = container.querySelector('.card');
+
+    await new Promise((resolve) => {
+        const img = cardEl.querySelector('img');
+        if (img && !img.complete) { img.onload = resolve; img.onerror = resolve; }
+        else resolve();
+    });
+
+    await document.fonts.ready;
+
+    try {
+        const canvas = await html2canvas(cardEl, {
+            backgroundColor: '#0c0f1e',
+            scale: 4,
+            useCORS: true,
+            logging: false,
+        });
+
+        const imgData = canvas.toDataURL('image/png');
+        const cardW = cardEl.offsetWidth;
+        const cardH = cardEl.offsetHeight;
+
+        const doc = new jsPDF({
+            orientation: cardW > cardH ? 'landscape' : 'portrait',
+            unit: 'pt',
+            format: [cardW, cardH],
+        });
+
+        doc.addImage(imgData, 'PNG', 0, 0, cardW, cardH, undefined, 'FAST');
+
+        const safeId = String(row?.regId || row?.name || 'registrant').trim().replace(/[^a-zA-Z0-9-_]+/g, '-');
+        doc.save(`wings-admit-card-${safeId}.pdf`);
+    } finally {
+        document.body.removeChild(container);
+    }
+};
+
+const openAdmitCardPreview = (row) => {
+    const events = (row?.events || []).map((e) => formatEventName(e)).join(', ') || '-';
+    const isTeam = String(row?.participationType || '').toLowerCase() === 'team';
+    const payStatus = String(row?.paymentStatus || 'submitted').toLowerCase();
+    const valStatus = String(row?.validationStatus || 'pending').toLowerCase();
+    let ticketStatus = 'Submitted';
+    if (payStatus === 'verified' || valStatus === 'verified' || valStatus === 'approved') ticketStatus = 'Verified';
+    else if (payStatus === 'failed' || valStatus === 'failed' || valStatus === 'rejected') ticketStatus = 'Failed';
+
+    const esc = (v) => String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+    const teamHtml = isTeam ? `
+        <div class="field"><span class="lbl">Team Name</span><span class="val">${esc(row?.teamName)}</span></div>
+        <div class="field"><span class="lbl">Team Members</span><span class="val">${esc((row?.teamMembers || []).join(', '))}</span></div>
+    ` : '';
+
+    const statusClass = ticketStatus.toLowerCase();
+
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Admit Card — ${esc(row?.name)}</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#08090f;display:flex;justify-content:center;align-items:center;min-height:100vh;font-family:'Inter',system-ui,sans-serif}
+.card{display:flex;width:720px;min-height:420px;border-radius:20px;overflow:hidden;position:relative;background:#0c0f1e;border:1px solid rgba(212,175,55,.25);box-shadow:0 0 60px rgba(212,175,55,.08),0 20px 60px rgba(0,0,0,.5)}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,#d4af37,#f5d76e,#d4af37)}
+.card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:4px;background:linear-gradient(90deg,#d4af37,#f5d76e,#d4af37)}
+.sidebar{width:190px;background:linear-gradient(180deg,#0e1225 0%,#101428 100%);display:flex;flex-direction:column;align-items:center;padding:36px 20px 28px;position:relative;border-right:1px solid rgba(212,175,55,.15)}
+.sidebar::after{content:'';position:absolute;right:0;top:40px;bottom:40px;width:1px;background:linear-gradient(180deg,transparent,rgba(212,175,55,.4),transparent)}
+.logo-wrap{width:120px;height:120px;border-radius:16px;overflow:hidden;border:2px solid rgba(212,175,55,.3);margin-bottom:20px;box-shadow:0 4px 20px rgba(0,0,0,.4)}
+.logo-wrap img{width:100%;height:100%;object-fit:cover}
+.brand{font-size:28px;font-weight:800;background:linear-gradient(135deg,#d4af37,#f5d76e);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:3px}
+.year{font-size:14px;font-weight:600;color:#8a8aa0;letter-spacing:6px;margin-top:2px}
+.badge{margin-top:18px;padding:6px 22px;border-radius:8px;font-size:10px;font-weight:700;letter-spacing:2px;background:linear-gradient(135deg,#d4af37,#c5a028);color:#0c0f1e;box-shadow:0 2px 12px rgba(212,175,55,.3)}
+.college-name{margin-top:auto;font-size:8px;color:#55567a;letter-spacing:1px;text-align:center;line-height:1.5}
+.main{flex:1;padding:32px 36px 24px;display:flex;flex-direction:column}
+.name{font-size:26px;font-weight:800;color:#fff;line-height:1.2;margin-bottom:4px}
+.gold-line{width:60px;height:3px;background:linear-gradient(90deg,#d4af37,#f5d76e);border-radius:2px;margin:8px 0 14px}
+.id-row{display:flex;gap:28px;align-items:center;margin-bottom:16px}
+.id-row .reg-id{font-size:11px;font-weight:600;color:#d4af37;letter-spacing:1px}
+.status{font-size:11px;font-weight:700;letter-spacing:1px;padding:3px 12px;border-radius:6px}
+.status.verified{color:#4ade80;background:rgba(74,222,128,.1)}.status.submitted{color:#facc15;background:rgba(250,204,21,.1)}.status.failed{color:#f87171;background:rgba(248,113,113,.1)}
+.fields{display:grid;grid-template-columns:1fr 1fr;gap:14px 24px;flex:1}
+.field .lbl{display:block;font-size:9px;font-weight:600;color:#55567a;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px}
+.field .val{display:block;font-size:12px;font-weight:500;color:#d0d0e0}
+.footer-line{margin-top:auto;padding-top:14px;border-top:1px solid rgba(212,175,55,.12);display:flex;justify-content:space-between;align-items:center}
+.footer-note{font-size:8px;color:#44455a;max-width:380px;line-height:1.4}
+.actions{display:flex;gap:8px}
+.actions button{padding:8px 20px;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s}
+.btn-gold{background:linear-gradient(135deg,#d4af37,#c5a028);color:#0c0f1e;box-shadow:0 2px 12px rgba(212,175,55,.3)}.btn-gold:hover{box-shadow:0 4px 20px rgba(212,175,55,.5)}
+.btn-dark{background:rgba(255,255,255,.06);color:#8a8aa0;border:1px solid rgba(255,255,255,.08)}.btn-dark:hover{background:rgba(255,255,255,.1)}
+@media print{.actions{display:none}.footer-line{border:none}}
+@media(max-width:700px){.card{flex-direction:column;width:95vw;min-height:auto}.sidebar{width:100%;flex-direction:row;padding:20px;gap:16px;border-right:none;border-bottom:1px solid rgba(212,175,55,.15)}.sidebar::after{display:none}.logo-wrap{width:60px;height:60px;margin-bottom:0}.brand{font-size:20px}.year{font-size:11px}.badge{margin-top:0}.college-name{display:none}.main{padding:24px 20px 20px}.name{font-size:20px}.fields{grid-template-columns:1fr}}
+</style></head><body>
+<div class="card">
+<div class="sidebar">
+<div class="logo-wrap"><img src="/assets/PydahFlag.png" alt="PYDAH Logo"></div>
+<div class="brand">WINGS</div>
+<div class="year">2 0 2 6</div>
+<div class="badge">ADMIT CARD</div>
+<div class="college-name">PYDAH COLLEGE<br>OF ENGINEERING</div>
+</div>
+<div class="main">
+<div class="name">${esc(row?.name)}</div>
+<div class="gold-line"></div>
+<div class="id-row">
+<span class="reg-id">REG ID: ${esc(row?.regId)}</span>
+<span class="status ${statusClass}">● ${ticketStatus.toUpperCase()}</span>
+</div>
+<div class="fields">
+<div class="field"><span class="lbl">College</span><span class="val">${esc(row?.college)}</span></div>
+<div class="field"><span class="lbl">Events</span><span class="val">${esc(events)}</span></div>
+<div class="field"><span class="lbl">Email</span><span class="val">${esc(row?.email)}</span></div>
+<div class="field"><span class="lbl">Phone</span><span class="val">${esc(row?.phone)}</span></div>
+<div class="field"><span class="lbl">Department / Year</span><span class="val">${esc(row?.department)} / ${esc(row?.year)}</span></div>
+<div class="field"><span class="lbl">Participation</span><span class="val">${esc(row?.participationType || 'Individual')}</span></div>
+${teamHtml}
+<div class="field"><span class="lbl">Payment Ref</span><span class="val">${esc(row?.paymentReference)}</span></div>
+<div class="field"><span class="lbl">Registered At</span><span class="val">${esc(formatDate(row?.createdAt))}</span></div>
+</div>
+<div class="footer-line">
+<div class="footer-note">This card must be presented at the venue for entry. WINGS 2k26 — National Level Technical Symposium, PYDAH College of Engineering.</div>
+<div class="actions"><button class="btn-gold" onclick="if(window.opener&&window.opener.__wingsDownloadCard){window.opener.__wingsDownloadCard()}">Download Card</button><button class="btn-dark" onclick="window.close()">Close</button></div>
+</div>
+</div>
+</div></body></html>`;
+
+    window.__wingsDownloadCard = () => downloadAdmitCard(row);
+    const win = window.open('', '_blank');
+    if (win) { win.document.write(html); win.document.close(); }
+};
+
 const getAbstractPdfEntries = (row) => {
     const details = row?.eventDetails && typeof row.eventDetails === 'object'
         ? row.eventDetails
@@ -829,15 +1016,23 @@ export default function AdminDashboardPage() {
                                         className="action-btn action-btn-secondary"
                                         onClick={() => handleDownloadSingleResponse(selectedRegistration)}
                                     >
-                                        Download Response PDF
+                                        Response PDF
                                     </button>
                                     <button
                                         type="button"
                                         className="action-btn action-btn-secondary"
                                         onClick={() => handleDownloadAllAbstractPdfs(selectedRegistration)}
                                     >
-                                        Download Abstract PDFs
+                                        Abstracts
                                     </button>
+                                    <button
+                                        type="button"
+                                        className="action-btn action-btn-accent"
+                                        onClick={() => openAdmitCardPreview(selectedRegistration)}
+                                    >
+                                        View Card
+                                    </button>
+
                                     <button
                                         type="button"
                                         className="action-btn action-btn-ghost"

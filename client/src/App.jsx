@@ -14,8 +14,13 @@ function App() {
     useEffect(() => {
         let fadeTimeout;
         let removeTimeout;
+        let fallbackTimeout;
+        let started = false;
 
         const startFadeOut = () => {
+            if (started) return;
+            started = true;
+            if (fallbackTimeout) window.clearTimeout(fallbackTimeout);
             fadeTimeout = window.setTimeout(() => {
                 setLoaderFadingOut(true);
                 setShowSite(true);
@@ -29,12 +34,15 @@ function App() {
             startFadeOut();
         } else {
             window.addEventListener('load', startFadeOut, { once: true });
+            // Fallback: show site after 4s even if resources are still loading (slow mobile)
+            fallbackTimeout = window.setTimeout(startFadeOut, 4000);
         }
 
         return () => {
             window.removeEventListener('load', startFadeOut);
             if (fadeTimeout) window.clearTimeout(fadeTimeout);
             if (removeTimeout) window.clearTimeout(removeTimeout);
+            if (fallbackTimeout) window.clearTimeout(fallbackTimeout);
         };
     }, []);
 

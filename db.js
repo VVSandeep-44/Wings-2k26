@@ -1,13 +1,17 @@
 const { MongoClient } = require("mongodb");
 
-const DEFAULT_DB_NAME = "wings2k26";
+// Environment-based configuration
 const IS_PRODUCTION = process.env.NODE_ENV === "production";
+const DEFAULT_DB_NAME = "wings2k26";
 const RAW_MONGODB_URI = process.env.MONGODB_URI || process.env.DATABASE_URL || "";
 const LOCAL_MONGODB_URI = process.env.MONGODB_URI_LOCAL || "";
 const BASE_DB_NAME = process.env.MONGODB_DB_NAME || DEFAULT_DB_NAME;
-const LOCAL_DB_NAME =
-  process.env.LOCAL_MONGODB_DB_NAME ||
+
+// Derived database name
+const LOCAL_DB_NAME = process.env.LOCAL_MONGODB_DB_NAME ||
   (BASE_DB_NAME.endsWith("_local") ? BASE_DB_NAME : `${BASE_DB_NAME}_local`);
+
+// Final connection URI and database name
 const MONGODB_URI = IS_PRODUCTION ? RAW_MONGODB_URI : (LOCAL_MONGODB_URI || RAW_MONGODB_URI);
 const DB_NAME = IS_PRODUCTION ? BASE_DB_NAME : LOCAL_DB_NAME;
 const REGISTRATIONS_COLLECTION = "registrations";

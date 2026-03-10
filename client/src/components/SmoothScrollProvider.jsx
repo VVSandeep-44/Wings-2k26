@@ -18,7 +18,7 @@ export default function SmoothScrollProvider({ children }) {
                 if (!node || typeof node.closest !== 'function') return false;
                 return Boolean(
                     node.closest(
-                        '.details-modal, .close-confirm-modal, .technical-details-modal, [data-native-scroll="true"]'
+                        '.admin-dashboard-body, .admin-login-body, .details-modal, .close-confirm-modal, .technical-details-modal, [data-native-scroll="true"]'
                     )
                 );
             },

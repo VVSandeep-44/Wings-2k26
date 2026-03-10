@@ -46,10 +46,18 @@
 .admin-dashboard-body .controls-navbar {
     position: relative;
     display: grid;
-    grid-template-columns: minmax(220px, 1fr) minmax(140px, auto) auto;
-    align-items: center;
+    grid-template-columns: 1fr auto;
+    align-items: stretch;
     gap: 10px;
     margin-bottom: 14px;
+}
+
+.admin-dashboard-body .controls-navbar > input {
+    grid-column: 1 / 2;
+} 
+
+.admin-dashboard-body .controls-navbar > select:first-of-type {
+    grid-column: 2 / 3;
 }
 
 .admin-dashboard-body .controls {
@@ -392,7 +400,7 @@
 .admin-dashboard-body table {
     width: 100%;
     border-collapse: collapse;
-    min-width: 820px;
+    min-width: 600px;
 }
 
 .admin-dashboard-body th,
@@ -534,6 +542,11 @@
     background: linear-gradient(135deg, #23304f, #273960);
 }
 
+.admin-dashboard-body .action-btn-accent {
+    background: linear-gradient(135deg, #0e4f5c, #127a7a);
+    color: #38f9ff;
+}
+
 .admin-dashboard-body .delete-btn {
     background: linear-gradient(135deg, #5a213f, #8a2b48);
 }
@@ -542,10 +555,26 @@
     min-width: 88px;
 }
 
+.admin-dashboard-body .download-admit-btn {
+    min-width: 50px;
+}
+
 .admin-dashboard-body .row-actions {
     display: flex;
     align-items: center;
     gap: 8px;
+    flex-wrap: wrap;
+}
+
+.admin-dashboard-body .name-cell {
+    font-weight: 600;
+    color: #dff6ff;
+}
+
+.admin-dashboard-body .email-cell,
+.admin-dashboard-body .regid-cell {
+    font-family: 'Courier New', monospace;
+    font-size: 0.85rem;
 }
 
 .admin-dashboard-body .delete-btn:disabled {
@@ -588,10 +617,11 @@
 
 @media (max-width: 900px) {
     .admin-dashboard-body .controls-navbar {
-        grid-template-columns: 1fr auto;
+        grid-template-columns: 1fr;
         grid-template-areas:
-            "search search"
-            "filter menu";
+            "search"
+            "filter"
+            "menu";
     }
 
     .admin-dashboard-body #searchInput {
@@ -616,71 +646,38 @@
     }
 
     .admin-dashboard-body .table-wrap {
-        overflow: visible;
-        border: 0;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
     }
 
-    .admin-dashboard-body table,
-    .admin-dashboard-body thead,
-    .admin-dashboard-body tbody,
-    .admin-dashboard-body tr,
-    .admin-dashboard-body th,
-    .admin-dashboard-body td {
-        display: block;
-        width: 100%;
+    .admin-dashboard-body .row-actions {
+        gap: 4px;
     }
 
-    .admin-dashboard-body table {
-        min-width: 0;
-        border-collapse: separate;
-        border-spacing: 0;
+    .admin-dashboard-body .action-btn {
+        min-width: 50px;
+        min-height: 32px;
+        padding: 6px 8px;
+        font-size: 0.75rem;
     }
 
-    .admin-dashboard-body thead {
-        display: none;
+    .admin-dashboard-body .view-btn {
+        min-width: 50px;
     }
 
-    .admin-dashboard-body tbody {
-        display: grid;
-        gap: 0.85rem;
+    .admin-dashboard-body .download-admit-btn {
+        min-width: 40px;
     }
+}
 
-    .admin-dashboard-body tbody tr {
-        border: 1px solid #2b3360;
-        border-radius: 12px;
-        background: rgba(17, 23, 48, 0.92);
-        padding: 0.4rem 0.6rem;
-    }
-
-    .admin-dashboard-body tbody td {
-        border: 0;
-        border-bottom: 1px dashed rgba(78, 92, 145, 0.45);
-        padding: 0.48rem 0;
-        text-align: right;
-        display: grid;
-        grid-template-columns: minmax(96px, 34%) 1fr;
-        gap: 0.6rem;
-        align-items: start;
-        font-size: 0.86rem;
-    }
-
-    .admin-dashboard-body tbody td::before {
-        content: attr(data-label);
-        color: #9eb0e9;
-        font-size: 0.74rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.3px;
-        text-align: left;
-    }
-
+@media (max-width: 768px) {
     .admin-dashboard-body .selected-response-head {
         flex-direction: column;
         align-items: flex-start;
     }
 
     .admin-dashboard-body .details-modal {
-        width: min(96vw, 740px);
+        width: min(96vw, 500px);
         max-height: calc(100dvh - 0.8rem);
     }
 
@@ -728,13 +725,48 @@
         width: 100%;
     }
 
-    .admin-dashboard-body tbody td:last-child {
-        border-bottom: 0;
-        padding-bottom: 0.25rem;
+    /* ---- Card-based table layout for mobile ---- */
+    .admin-dashboard-body table {
+        min-width: 0;
     }
 
-    .admin-dashboard-body tbody td > * {
-        justify-self: end;
+    .admin-dashboard-body thead {
+        display: none;
+    }
+
+    .admin-dashboard-body tbody tr {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 0;
+        margin-bottom: 12px;
+        border: 1px solid #2a3056;
+        border-radius: 10px;
+        background: rgba(17, 24, 51, 0.6);
+        overflow: hidden;
+    }
+
+    .admin-dashboard-body tbody td {
+        display: grid;
+        grid-template-columns: minmax(100px, 35%) 1fr;
+        align-items: baseline;
+        gap: 0.5rem;
+        padding: 8px 10px;
+        border-bottom: 1px solid rgba(42, 48, 86, 0.5);
+        font-size: 0.85rem;
+    }
+
+    .admin-dashboard-body tbody td::before {
+        content: attr(data-label);
+        font-weight: 700;
+        font-size: 0.72rem;
+        color: #38f9ff;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+
+    .admin-dashboard-body tbody td:last-child {
+        border-bottom: 0;
+        padding-bottom: 10px;
     }
 
     .admin-dashboard-body tbody td.empty {
@@ -750,20 +782,15 @@
 
     .admin-dashboard-body .row-actions {
         width: 100%;
-        display: grid;
-        grid-template-columns: 1fr;
+        display: flex;
+        flex-wrap: wrap;
         gap: 6px;
     }
 
-    .admin-dashboard-body .delete-btn,
-    .admin-dashboard-body .view-btn {
-        width: 100%;
+    .admin-dashboard-body .row-actions .action-btn {
+        flex: 1 1 auto;
         min-width: 0;
-    }
-
-    .admin-dashboard-body .action-btn {
-        width: 100%;
-        min-width: 0;
+        width: auto;
     }
 }
 

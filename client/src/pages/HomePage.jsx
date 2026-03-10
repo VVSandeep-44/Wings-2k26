@@ -44,6 +44,7 @@ export default function HomePage() {
             '.contact-item',
             '.social-links a',
             'footer p',
+            'footer .footer-col',
             '.event-details',
             '.countdown-item',
             '.cta-button',
