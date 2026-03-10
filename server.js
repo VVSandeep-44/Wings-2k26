@@ -292,7 +292,7 @@ app.use(
     allowedHeaders: ["Content-Type", "x-admin-password"],
   })
 );
-app.use(express.json());
+app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, "client", "dist")));
 
@@ -871,13 +871,6 @@ app.post("/api/register", async (req, res) => {
   }
 
   if (participationType === "team") {
-    if (!teamName) {
-      return res.status(400).json({
-        success: false,
-        message: "Team name is required for team registration",
-      });
-    }
-
     if (teamMembers.length < 2) {
       return res.status(400).json({
         success: false,

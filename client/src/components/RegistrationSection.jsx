@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { QRCodeCanvas } from 'qrcode.react';
 import { submitRegistration, checkHealth, fetchRegistrationStatus } from '../services/api';
 
@@ -148,6 +149,11 @@ export default function RegistrationSection() {
 
     const handleOpenTechnicalDetails = (eventValue) => {
         if (!isTechnicalEventDetailsRequired(eventValue)) return;
+        if (activeTechnicalEvent === eventValue) {
+            setActiveTechnicalEvent('');
+            requestAnimationFrame(() => setActiveTechnicalEvent(eventValue));
+            return;
+        }
         setActiveTechnicalEvent(eventValue);
     };
 
@@ -389,65 +395,67 @@ export default function RegistrationSection() {
         }
     };
 
+    const technicalDetailsModal = activeTechnicalEvent && isTechnicalEventDetailsRequired(activeTechnicalEvent) ? (
+        <div className="technical-details-modal-overlay" role="presentation">
+            <div
+                className="technical-details-modal"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="technicalDetailsTitle"
+            >
+                <h3 id="technicalDetailsTitle">{getTechnicalEventLabel(activeTechnicalEvent)} Details</h3>
+                <p>
+                    Please provide the required details for this technical event submission.
+                </p>
+
+                <div className="technical-details-fields">
+                    <label htmlFor="technicalEventTopic">Project Title *</label>
+                    <input
+                        id="technicalEventTopic"
+                        type="text"
+                        placeholder="Enter your topic"
+                        value={technicalEventDetails[activeTechnicalEvent]?.topic || ''}
+                        onChange={(e) => handleTechnicalDetailsChange('topic', e.target.value)}
+                    />
+
+                    <label htmlFor="technicalEventAbstractPdf">Abstract PDF *</label>
+                    <input
+                        id="technicalEventAbstractPdf"
+                        type="file"
+                        accept="application/pdf"
+                        onChange={handleTechnicalAbstractFileChange}
+                    />
+                    <small>
+                        Upload a PDF file (max {MAX_ABSTRACT_PDF_SIZE_MB} MB).
+                        {technicalEventDetails[activeTechnicalEvent]?.abstractPdfName
+                            ? ` Selected: ${technicalEventDetails[activeTechnicalEvent].abstractPdfName}`
+                            : ''}
+                    </small>
+                </div>
+
+                <div className="technical-details-actions">
+                    <button
+                        type="button"
+                        className="btn-secondary"
+                        onClick={handleCancelTechnicalDetails}
+                    >
+                        Cancel Event
+                    </button>
+                    <button
+                        type="button"
+                        className="submit-btn"
+                        onClick={handleSaveTechnicalDetails}
+                    >
+                        Save Details
+                    </button>
+                </div>
+            </div>
+        </div>
+    ) : null;
+
     return (
         <>
-            {activeTechnicalEvent && isTechnicalEventDetailsRequired(activeTechnicalEvent) ? (
-                <div className="technical-details-modal-overlay" role="presentation">
-                    <div
-                        className="technical-details-modal"
-                        role="dialog"
-                        aria-modal="true"
-                        aria-labelledby="technicalDetailsTitle"
-                    >
-                        <h3 id="technicalDetailsTitle">{getTechnicalEventLabel(activeTechnicalEvent)} Details</h3>
-                        <p>
-                            Please provide the required details for this technical event submission.
-                        </p>
-
-                        <div className="technical-details-fields">
-                            <label htmlFor="technicalEventTopic">Project Title *</label>
-                            <input
-                                id="technicalEventTopic"
-                                type="text"
-                                placeholder="Enter your topic"
-                                value={technicalEventDetails[activeTechnicalEvent]?.topic || ''}
-                                onChange={(e) => handleTechnicalDetailsChange('topic', e.target.value)}
-                            />
-
-                            <label htmlFor="technicalEventAbstractPdf">Abstract PDF *</label>
-                            <input
-                                id="technicalEventAbstractPdf"
-                                type="file"
-                                accept="application/pdf"
-                                onChange={handleTechnicalAbstractFileChange}
-                            />
-                            <small>
-                                Upload a PDF file (max {MAX_ABSTRACT_PDF_SIZE_MB} MB).
-                                {technicalEventDetails[activeTechnicalEvent]?.abstractPdfName
-                                    ? ` Selected: ${technicalEventDetails[activeTechnicalEvent].abstractPdfName}`
-                                    : ''}
-                            </small>
-                        </div>
-
-                        <div className="technical-details-actions">
-                            <button
-                                type="button"
-                                className="btn-secondary"
-                                onClick={handleCancelTechnicalDetails}
-                            >
-                                Cancel Event
-                            </button>
-                            <button
-                                type="button"
-                                className="submit-btn"
-                                onClick={handleSaveTechnicalDetails}
-                            >
-                                Save Details
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            ) : null}
+            {createPortal(technicalDetailsModal, document.body)}
 
             {showBanner && (
                 <div
