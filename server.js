@@ -287,7 +287,7 @@ app.use(
 
       return callback(new Error("Origin not allowed by CORS"));
     },
-    methods: ["GET", "POST", "DELETE", "OPTIONS"],
+    methods: ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
     credentials: true,
     allowedHeaders: ["Content-Type", "x-admin-password"],
   })
