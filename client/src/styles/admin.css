@@ -264,6 +264,8 @@
     background: rgba(6, 10, 24, 0.7);
     backdrop-filter: blur(4px);
     padding: clamp(0.5rem, 2.5vw, 1rem);
+    overflow-y: auto;
+    justify-items: center;
 }
 
 .admin-dashboard-body .details-modal {

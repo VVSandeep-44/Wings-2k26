@@ -496,6 +496,7 @@ export default function AdminDashboardPage() {
     const [paymentUpdatingId, setPaymentUpdatingId] = useState(null);
     const [isTrashView, setIsTrashView] = useState(false);
     const [selectedRegistration, setSelectedRegistration] = useState(null);
+    const [popupTop, setPopupTop] = useState(0);
     const [registrationControl, setRegistrationControl] = useState({
         isOpen: true,
         reason: '',
@@ -728,7 +729,11 @@ export default function AdminDashboardPage() {
         }
     };
 
-    const handleViewDetails = (row) => {
+    const handleViewDetails = (row, e) => {
+        if (e) {
+            const rect = e.currentTarget.getBoundingClientRect();
+            setPopupTop(Math.max(0, rect.top));
+        }
         setSelectedRegistration(row);
         setStatus(`Viewing details for ${row?.name || row?.regId || 'selected registrant'}.`, 'ok');
     };
@@ -992,6 +997,7 @@ export default function AdminDashboardPage() {
                             className="details-modal-overlay"
                             role="presentation"
                             onClick={() => setSelectedRegistration(null)}
+                            style={{ alignItems: 'flex-start', paddingTop: `${Math.min(popupTop, window.innerHeight * 0.3)}px` }}
                         >
                         <div
                             className="selected-response-panel details-modal"
@@ -1229,7 +1235,7 @@ export default function AdminDashboardPage() {
                                                     <button
                                                         type="button"
                                                         className="action-btn action-btn-primary view-btn"
-                                                        onClick={() => handleViewDetails(row)}
+                                                        onClick={(e) => handleViewDetails(row, e)}
                                                     >
                                                         View
                                                     </button>
