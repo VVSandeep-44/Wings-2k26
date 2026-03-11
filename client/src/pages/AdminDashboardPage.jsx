@@ -665,14 +665,9 @@ export default function AdminDashboardPage() {
 
     const handleToggleRegistrations = async (nextIsOpen) => {
         if (!nextIsOpen) {
-            const firstConfirm = window.confirm(
-                'Are you sure you want to close registrations? Users will not be able to submit the form.'
-            );
-            if (!firstConfirm) return;
             setShowCloseConfirmPopup(true);
             return;
         }
-
         await executeRegistrationToggle(true);
     };
 

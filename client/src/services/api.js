@@ -1,3 +1,17 @@
+// Fetch registration details by regId or email (for admin/verification use)
+export const fetchRegistrationDetailsByIdOrEmail = async (query) => {
+    const safeQuery = encodeURIComponent(String(query || '').trim());
+    const response = await fetch(buildApiUrl(`/api/registrations/search?q=${safeQuery}`), {
+        method: 'GET',
+        credentials: 'include',
+        cache: 'no-store',
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok || !result.success || !result.data) {
+        throw new Error(result.message || 'No registration found');
+    }
+    return result.data;
+};
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 const buildApiUrl = (path) => (API_BASE ? `${API_BASE}${path}` : path);
 const REGISTRATION_API_URL =

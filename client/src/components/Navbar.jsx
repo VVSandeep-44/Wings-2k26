@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
 
 export default function Navbar() {
     const [scrolled, setScrolled] = useState(false);
@@ -37,6 +38,8 @@ export default function Navbar() {
                 <li><a href="#about" onClick={closeMenu}>About</a></li>
                 <li><a href="#register" onClick={closeMenu}>Register</a></li>
                 <li><a href="#contact" onClick={closeMenu}>Contact</a></li>
+                <li><Link to="/onspot-dashboard" onClick={closeMenu}>On-Spot Dashboard</Link></li>
+                <li><Link to="/online-verification" onClick={closeMenu}>Online Verification</Link></li>
             </ul>
         </nav>
     );

@@ -1,3 +1,77 @@
+/* On-Spot/Verification Dashboard Styles */
+.dashboard-tabs {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 24px;
+}
+.dashboard-tabs button {
+    background: #23284a;
+    color: #fff;
+    border: none;
+    padding: 10px 22px;
+    border-radius: 8px 8px 0 0;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.dashboard-tabs button.active {
+    background: linear-gradient(135deg, #ff2d95, #7c4dff);
+    color: #fff;
+}
+.onspot-form, .verify-form {
+    background: #181c2f;
+    border-radius: 10px;
+    padding: 18px 20px;
+    max-width: 400px;
+    margin-bottom: 18px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+.onspot-form label, .verify-form label {
+    display: block;
+    margin-bottom: 12px;
+    font-weight: 500;
+}
+.onspot-form input, .verify-form input {
+    width: 100%;
+    padding: 8px 10px;
+    border-radius: 6px;
+    border: 1px solid #2f3764;
+    background: #23284a;
+    color: #fff;
+    margin-top: 4px;
+}
+.onspot-form button, .verify-form button {
+    margin-top: 10px;
+    width: 100%;
+    background: linear-gradient(135deg, #ff2d95, #7c4dff);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 10px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.verify-section {
+    max-width: 420px;
+}
+.verify-result {
+    background: #23284a;
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin-top: 14px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+.verify-result p {
+    margin: 6px 0;
+}
+.verify-result button {
+    margin-top: 10px;
+}
+.error {
+    color: #ff6b6b;
+    margin-top: 10px;
+    font-weight: 600;
+}
 /* ============================================
    Admin Dashboard Page Styles
    (Ported from admin.html inline styles)

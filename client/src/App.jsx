@@ -5,6 +5,8 @@ import AdminLoginPage from './pages/AdminLoginPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import RegistrantDetailsPage from './pages/RegistrantDetailsPage';
 import PageLoader from './components/PageLoader';
+import OnSpotDashboardPage from './pages/OnSpotDashboardPage';
+import OnlineVerificationPage from './pages/OnlineVerificationPage';
 
 function App() {
     const [showLoader, setShowLoader] = useState(true);
@@ -55,6 +57,8 @@ function App() {
                         <Route path="/registration/:regId" element={<RegistrantDetailsPage />} />
                         <Route path="/admin-login" element={<AdminLoginPage />} />
                         <Route path="/admin" element={<AdminDashboardPage />} />
+                        <Route path="/onspot-dashboard" element={<OnSpotDashboardPage />} />
+                        <Route path="/online-verification" element={<OnlineVerificationPage />} />
                         <Route path="*" element={<Navigate to="/" replace />} />
                     </Routes>
                 </div>
