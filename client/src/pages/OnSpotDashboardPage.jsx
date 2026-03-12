@@ -614,40 +614,61 @@ const OnSpotDashboard = () => {
                   <div style={{ color: '#ff6b6b', padding: 16 }}>{error}</div>
                 ) : (
                   <div style={{ overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', background: 'rgba(35,38,74,0.98)', color: '#fff', borderRadius: 12, overflow: 'hidden', fontSize: '1rem' }}>
+                    <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0, background: 'rgba(35,38,74,0.98)', color: '#fff', borderRadius: 12, overflow: 'hidden', fontSize: '1rem' }}>
                       <thead>
                         <tr style={{ background: '#181c2f' }}>
-                          <th style={{ padding: 12 }}>Name</th>
-                          <th>Email</th>
-                          <th>Phone</th>
-                          <th>College</th>
-                          <th>Department</th>
-                          <th>Year</th>
-                          <th>Reg ID</th>
-                          <th>Type</th>
-                          <th>Registered At</th>
-                          <th>Actions</th>
+                          <th style={{ padding: '14px 10px', textAlign: 'left', minWidth: 120 }}>Name</th>
+                          <th style={{ padding: '14px 10px', textAlign: 'left', minWidth: 180 }}>Email</th>
+                          <th style={{ padding: '14px 10px', textAlign: 'left', minWidth: 110 }}>Phone</th>
+                          <th style={{ padding: '14px 10px', textAlign: 'left', minWidth: 180, maxWidth: 220, whiteSpace: 'normal', wordBreak: 'break-word' }}>College</th>
+                          <th style={{ padding: '14px 10px', textAlign: 'left', minWidth: 110 }}>Department</th>
+                          <th style={{ padding: '14px 10px', textAlign: 'left', minWidth: 70 }}>Year</th>
+                          <th style={{ padding: '14px 10px', textAlign: 'left', minWidth: 120 }}>Reg ID</th>
+                          <th style={{ padding: '14px 10px', textAlign: 'left', minWidth: 70 }}>Type</th>
+                          <th style={{ padding: '14px 10px', textAlign: 'left', minWidth: 140 }}>Registered At</th>
+                          <th style={{ padding: '14px 10px', textAlign: 'left', minWidth: 120 }}>Actions</th>
                         </tr>
                       </thead>
                       <tbody>
                         {filteredRegistrants.length === 0 ? (
                           <tr><td colSpan={10} style={{ color: '#aaa', textAlign: 'center', padding: 24 }}>No registrants found.</td></tr>
-                        ) : filteredRegistrants.map((r) => (
-                          <tr key={r.regId || r._id} style={{ borderBottom: '1px solid #333' }}>
-                            <td>{r.name}</td>
-                            <td>{r.email}</td>
-                            <td>{r.phone}</td>
-                            <td>{r.college}</td>
-                            <td>{r.department}</td>
-                            <td>{r.year}</td>
-                            <td>{r.regId}</td>
-                            <td>{r.registrationType || 'online'}</td>
-                            <td>{r.createdAt ? new Date(r.createdAt).toLocaleString() : '-'}</td>
-                            <td>
-                              <button onClick={() => handleSendAdmitCard(r.regId)} disabled={sendingId === r.regId} style={{ padding: '8px 14px', borderRadius: 8, background: '#ffd166', color: '#23264a', fontWeight: 700, border: 'none', cursor: 'pointer', marginRight: 8, fontSize: '1rem', boxShadow: '0 2px 8px #ffd16640' }}>
+                        ) : filteredRegistrants.map((r, idx) => (
+                          <tr key={r.regId || r._id} style={{ borderBottom: '1px solid #333', background: idx % 2 === 0 ? 'rgba(35,38,74,0.98)' : '#23264a' }}>
+                            <td style={{ padding: '10px 10px', verticalAlign: 'top', fontWeight: 600 }}>{r.name}</td>
+                            <td style={{ padding: '10px 10px', verticalAlign: 'top', wordBreak: 'break-all' }}>{r.email}</td>
+                            <td style={{ padding: '10px 10px', verticalAlign: 'top' }}>{r.phone}</td>
+                            <td style={{ padding: '10px 10px', verticalAlign: 'top', maxWidth: 220, whiteSpace: 'normal', wordBreak: 'break-word' }}>{r.college}</td>
+                            <td style={{ padding: '10px 10px', verticalAlign: 'top' }}>{r.department}</td>
+                            <td style={{ padding: '10px 10px', verticalAlign: 'top' }}>{r.year}</td>
+                            <td style={{ padding: '10px 10px', verticalAlign: 'top', fontFamily: 'monospace', fontSize: '0.98em' }}>{r.regId}</td>
+                            <td style={{ padding: '10px 10px', verticalAlign: 'top', textTransform: 'capitalize' }}>{r.registrationType || 'online'}</td>
+                            <td style={{ padding: '10px 10px', verticalAlign: 'top' }}>{r.createdAt ? new Date(r.createdAt).toLocaleString() : '-'}</td>
+                            <td style={{ padding: '10px 10px', verticalAlign: 'top', display: 'flex', gap: 8 }}>
+                              <button
+                                onClick={() => {
+                                  // Construct admit card view URL (public view)
+                                  const base = window.location.origin;
+                                  const url = `${base}/registration/${encodeURIComponent(r.regId)}`;
+                                  window.open(url, '_blank', 'noopener');
+                                }}
+                                style={{
+                                  padding: '8px 14px',
+                                  borderRadius: 8,
+                                  background: '#2de0ff',
+                                  color: '#23264a',
+                                  fontWeight: 700,
+                                  border: 'none',
+                                  cursor: 'pointer',
+                                  fontSize: '1rem',
+                                  boxShadow: '0 2px 8px #2de0ff40',
+                                  marginRight: 0
+                                }}
+                              >
+                                View Admit Card
+                              </button>
+                              <button onClick={() => handleSendAdmitCard(r.regId)} disabled={sendingId === r.regId} style={{ padding: '8px 14px', borderRadius: 8, background: '#ffd166', color: '#23264a', fontWeight: 700, border: 'none', cursor: 'pointer', fontSize: '1rem', boxShadow: '0 2px 8px #ffd16640' }}>
                                 {sendingId === r.regId ? (sendStatus || 'Sending...') : 'Send Admit Card'}
                               </button>
-                              {/* Add more actions as needed */}
                             </td>
                           </tr>
                         ))}

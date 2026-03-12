@@ -167,10 +167,6 @@ export default function RegistrantDetailsPage() {
                                     <p className="admit-label">Payment Ref</p>
                                     <p className="admit-value mono">{data.paymentReference || '-'}</p>
                                 </div>
-                                <div>
-                                    <p className="admit-label">Registered At</p>
-                                    <p className="admit-value">{formatDate(data.createdAt)}</p>
-                                </div>
                             </div>
                         </section>
                     </section>
