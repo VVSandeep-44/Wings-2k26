@@ -131,7 +131,13 @@ export const fetchRegistrations = async (limit = 20, options = {}) => {
         cache: 'no-store',
     });
 
-    const result = await response.json();
+    let result;
+    try {
+        result = await response.json();
+    } catch (err) {
+        // If response is not valid JSON, throw a clear error
+        throw new Error('Server returned invalid JSON. You may be logged out or the server is down.');
+    }
 
     if (!response.ok || !result.success) {
         throw new Error(result.message || 'Failed to fetch registrations');
