@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { fetchPublicRegistrationDetails } from '../services/api';
 import '../styles/registration-view.css';
+import html2canvas from 'html2canvas';
 
 const EVENT_LABEL_MAP = {
     circuitry: 'Circuitry',
@@ -102,6 +103,17 @@ export default function RegistrantDetailsPage() {
         return `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(value)}`;
     }, []);
 
+    // Add download handler
+    const handleDownloadAdmitCard = async () => {
+        const card = document.querySelector('.admit-ticket');
+        if (!card) return;
+        const canvas = await html2canvas(card, { backgroundColor: null, scale: 2 });
+        const link = document.createElement('a');
+        link.download = `WINGS-2k26-AdmitCard-${data?.regId || 'participant'}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+    };
+
     return (
         <main className="registration-view-page">
             <div className="registration-view-shell">
@@ -175,6 +187,14 @@ export default function RegistrantDetailsPage() {
                 <footer className="registration-view-footer">
                     <Link to="/">Back to WINGS 2k26</Link>
                 </footer>
+
+                {!loading && !error && data ? (
+                    <div style={{ textAlign: 'center', margin: '18px 0 0' }}>
+                        <button onClick={handleDownloadAdmitCard} className="admit-download-btn">
+                            Download Admit Card as Image
+                        </button>
+                    </div>
+                ) : null}
             </div>
         </main>
     );

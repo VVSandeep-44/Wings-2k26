@@ -40,6 +40,8 @@ const {
   getRegistrationControl,
   setRegistrationControl,
 } = require("./db");
+const nodeHtmlToImage = require('node-html-to-image');
+const buildAdmitCardHtml = require('./templates/admitCardTemplate');
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
@@ -443,7 +445,24 @@ const validateEmailInBackground = async (email) => {
   return { valid: true, reason: "Email verified" };
 };
 
-const sendInvitationEmail = async ({
+// Helper to generate admit card image as buffer
+async function generateAdmitCardImage({ name, regId, college, department, year, events, detailsViewUrl }) {
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(detailsViewUrl)}`;
+  const html = buildAdmitCardHtml({
+    name,
+    regId,
+    college,
+    department,
+    year,
+    events: Array.isArray(events) ? events.join(', ') : events,
+    qrUrl
+  });
+  const [image] = await nodeHtmlToImage({ html, type: 'png', quality: 100, encoding: 'buffer' });
+  return image;
+}
+
+// Modified sendInvitationEmail to attach admit card image
+async function sendInvitationEmailWithAdmitCard({
   name,
   email,
   phone,
@@ -456,7 +475,7 @@ const sendInvitationEmail = async ({
   teamName,
   teamMembers,
   paymentReference,
-}) => {
+}) {
   if (!BREVO_API_KEY) {
     return {
       sent: false,
@@ -470,25 +489,27 @@ const sendInvitationEmail = async ({
     String(regId || "").trim()
   )}?token=${encodeURIComponent(viewToken)}`;
 
-  const htmlContent = buildInvitationEmailHtml({
-    name,
-    email,
-    phone,
-    college,
-    department,
-    year,
-    regId,
-    events,
-    participationType,
-    teamName,
-    teamMembers,
-    paymentReference,
-    eventName: EVENT_NAME,
-    eventDateText: EVENT_DATE_TEXT,
-    eventVenueText: EVENT_VENUE_TEXT,
-    eventRegisterUrl: EVENT_REGISTER_URL,
-    detailsViewUrl,
-  });
+  // Generate admit card image
+  let admitCardImageBuffer;
+  try {
+    admitCardImageBuffer = await generateAdmitCardImage({
+      name,
+      regId,
+      college,
+      department,
+      year,
+      events,
+      detailsViewUrl
+    });
+  } catch (err) {
+    return { sent: false, reason: 'Failed to generate admit card image: ' + err.message };
+  }
+
+  const htmlContent = `<div style='font-family:Segoe UI,Arial,sans-serif;font-size:16px;color:#1f2940;'>
+    <p>Dear <b>${name}</b>,</p>
+    <p>Congratulations! Please find your WINGS 2k26 admit card attached below. We look forward to seeing you at the event.</p>
+    <p>Regards,<br/>WINGS 2k26 Organizing Team</p>
+  </div>`;
 
   try {
     const response = await postJson(
@@ -496,8 +517,15 @@ const sendInvitationEmail = async ({
       {
         sender: { email: INVITE_FROM_EMAIL, name: EVENT_NAME },
         to: [{ email }],
-        subject: `Invitation confirmed - ${EVENT_NAME}`,
+        subject: `Your Admit Card - ${EVENT_NAME}`,
         htmlContent,
+        attachment: [
+          {
+            name: `WINGS-2k26-AdmitCard-${regId}.png`,
+            content: admitCardImageBuffer.toString('base64'),
+            contentType: 'image/png',
+          },
+        ],
       },
       {
         "api-key": BREVO_API_KEY,
@@ -525,7 +553,7 @@ const sendInvitationEmail = async ({
       reason: error.message || "Invitation mail failed",
     };
   }
-};
+}
 
 const runRegistrationValidationWorkflow = async ({
   id,
@@ -578,7 +606,7 @@ const runRegistrationValidationWorkflow = async ({
       updatedAt: new Date().toISOString(),
     });
 
-    const invitation = await sendInvitationEmail({
+    const invitation = await sendInvitationEmailWithAdmitCard({
       name,
       email,
       phone,
