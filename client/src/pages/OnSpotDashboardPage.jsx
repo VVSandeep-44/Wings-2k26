@@ -11,6 +11,7 @@ const OnSpotDashboard = () => {
   const [verifyResult, setVerifyResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [qrScanResult, setQrScanResult] = useState('');
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   // Placeholder: Replace with real API calls
   const handleOnSpotSubmit = (e) => {
@@ -76,22 +77,43 @@ const OnSpotDashboard = () => {
           marginTop: 0,
         }}>
           {/* Sidebar */}
-            <div style={{
-              minWidth: 240,
-              maxWidth: 260,
-              background: '#2d325a',
-              border: '2px solid #ff2d95',
-              borderRadius: '16px',
-              margin: '32px 0 32px 32px',
-              padding: '64px 0 32px 0', // Add top padding so links are always visible
-              boxShadow: '0 4px 24px 0 #ff2d9580, 0 2px 8px rgba(0,0,0,0.18)',
-              height: 'calc(100vh - 128px - 32px)', // Reduce height to avoid overlap
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'flex-start',
-              alignItems: 'flex-start',
-              zIndex: 10,
-            }}>
+          <div style={{
+            minWidth: sidebarCollapsed ? 48 : 240,
+            maxWidth: sidebarCollapsed ? 48 : 260,
+            background: '#2d325a',
+            border: '2px solid #ff2d95',
+            borderRadius: '16px',
+            margin: '32px 0 32px 32px',
+            padding: sidebarCollapsed ? '16px 0' : '64px 0 32px 0',
+            boxShadow: '0 4px 24px 0 #ff2d9580, 0 2px 8px rgba(0,0,0,0.18)',
+            height: 'calc(100vh - 128px - 32px)',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'flex-start',
+            alignItems: 'center',
+            zIndex: 10,
+            transition: 'min-width 0.2s, max-width 0.2s, padding 0.2s',
+          }}>
+            <button
+              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+              style={{
+                background: '#ff2d95',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '8px',
+                padding: '8px 12px',
+                marginBottom: sidebarCollapsed ? 0 : 24,
+                cursor: 'pointer',
+                fontWeight: 700,
+                fontSize: '1rem',
+                width: sidebarCollapsed ? 32 : 120,
+                transition: 'width 0.2s',
+              }}
+              title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            >
+              {sidebarCollapsed ? '→' : '←'}
+            </button>
+            {!sidebarCollapsed && (
               <nav style={{ width: '100%' }}>
                 <button
                   onClick={() => setActiveSection('onspot')}
@@ -138,36 +160,37 @@ const OnSpotDashboard = () => {
                   Total Registrations
                 </button>
               </nav>
-            </div>
-            {/* Main content */}
-            <main style={{
-              width: '100%',
-              padding: '32px 0 32px 0',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              marginLeft: 32,
-            }}>
-              {activeSection === 'onspot' && (
-                <section id="onspot-registration" style={{ width: '100%', maxWidth: 440, marginBottom: 48 }}>
-                  <form className="onspot-form" onSubmit={handleOnSpotSubmit}>
-                    <h3>On-Spot Registration</h3>
-                    <label>Name:<input type="text" value={onSpotForm.name} onChange={e => setOnSpotForm({ ...onSpotForm, name: e.target.value })} required /></label>
-                    <label>Email:<input type="email" value={onSpotForm.email} onChange={e => setOnSpotForm({ ...onSpotForm, email: e.target.value })} required /></label>
-                    <label>Phone:<input type="tel" value={onSpotForm.phone} onChange={e => setOnSpotForm({ ...onSpotForm, phone: e.target.value })} required /></label>
-                    <button type="submit" disabled={loading}>{loading ? 'Submitting...' : 'Register'}</button>
-                  </form>
-                </section>
-              )}
-              {activeSection === 'total' && (
-                <section id="total-registrations" style={{ width: '100%', maxWidth: 600 }}>
-                  <h2 style={{ color: '#fff', fontWeight: 700, fontSize: '2rem', marginBottom: 24 }}>Total Registrations</h2>
-                  {/* Registration stats or table goes here */}
-                </section>
-              )}
-            </main>
+            )}
           </div>
+          {/* Main content */}
+          <main style={{
+            width: '100%',
+            padding: '32px 0 32px 0',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            marginLeft: 32,
+          }}>
+            {activeSection === 'onspot' && (
+              <section id="onspot-registration" style={{ width: '100%', maxWidth: 440, marginBottom: 48 }}>
+                <form className="onspot-form" onSubmit={handleOnSpotSubmit}>
+                  <h3>On-Spot Registration</h3>
+                  <label>Name:<input type="text" value={onSpotForm.name} onChange={e => setOnSpotForm({ ...onSpotForm, name: e.target.value })} required /></label>
+                  <label>Email:<input type="email" value={onSpotForm.email} onChange={e => setOnSpotForm({ ...onSpotForm, email: e.target.value })} required /></label>
+                  <label>Phone:<input type="tel" value={onSpotForm.phone} onChange={e => setOnSpotForm({ ...onSpotForm, phone: e.target.value })} required /></label>
+                  <button type="submit" disabled={loading}>{loading ? 'Submitting...' : 'Register'}</button>
+                </form>
+              </section>
+            )}
+            {activeSection === 'total' && (
+              <section id="total-registrations" style={{ width: '100%', maxWidth: 600 }}>
+                <h2 style={{ color: '#fff', fontWeight: 700, fontSize: '2rem', marginBottom: 24 }}>Total Registrations</h2>
+                {/* Registration stats or table goes here */}
+              </section>
+            )}
+          </main>
         </div>
+      </div>
     </>
   );
 };
