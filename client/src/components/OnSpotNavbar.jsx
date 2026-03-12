@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 
-export default function Navbar() {
+export default function OnSpotNavbar() {
     const [scrolled, setScrolled] = useState(false);
     const [menuOpen, setMenuOpen] = useState(false);
     const navRef = useRef(null);
@@ -20,8 +20,20 @@ export default function Navbar() {
     };
 
     return (
-        <nav ref={navRef} className={scrolled ? 'scrolled' : ''}>
-            <a href="#home" className="logo" onClick={closeMenu}>
+        <nav
+            ref={navRef}
+            className={scrolled ? 'scrolled' : ''}
+            style={{
+                background: '#181c2f',
+                borderBottom: '2px solid #ff2d95',
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                width: '100%',
+                zIndex: 1200,
+            }}
+        >
+            <a href="#onspot-dashboard" className="logo" onClick={closeMenu}>
                 <img src="/assets/pydah-logo.jpeg" alt="Pydah Logo" />
             </a>
             <button
@@ -34,10 +46,8 @@ export default function Navbar() {
                 <i className={menuOpen ? 'fas fa-times' : 'fas fa-bars'}></i>
             </button>
             <ul className={`nav-links${menuOpen ? ' open' : ''}`}>
-                <li><a href="#home" onClick={closeMenu}>Home</a></li>
-                <li><a href="#about" onClick={closeMenu}>About</a></li>
-                <li><a href="#register" onClick={closeMenu}>Register</a></li>
-                <li><a href="#contact" onClick={closeMenu}>Contact</a></li>
+                <li><a href="#onspot-dashboard" onClick={closeMenu}>On-Spot Dashboard</a></li>
+                <li><Link to="/online-verification" onClick={closeMenu}>Online Verification</Link></li>
             </ul>
         </nav>
     );

@@ -472,10 +472,6 @@ export default function RegistrationSection() {
                 <div className="registration-deadline-inline" role="note" aria-label="Registration deadline notice">
                     <i className="fas fa-clock"></i>
                     <span>
-                        <strong style={{ color: '#ffd166', fontWeight: 'bold', fontSize: '1.1em', textShadow: '0 0 4px #000' }}>
-                            Registration closes <u>Today at 5 PM</u>.
-                        </strong>
-                        <br />
                         <span style={{ color: '#fffbe6' }}>On-spot registrations available on 13th March (9AM - 12PM).</span>
                         <br />
                         <span style={{ color: '#fffbe6' }}>Technical events start at 10 AM on 13th March.</span>
