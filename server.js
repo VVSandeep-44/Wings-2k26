@@ -939,79 +939,83 @@ app.post("/api/register", async (req, res) => {
     });
   }
 
-  try {
-    const insertResult = await createRegistration({
+  const registrationType = payload.registrationType || 'online';
+
+  const insertResult = await createRegistration({
+    name: String(payload.name).trim(),
+    email: normalizedEmail,
+    phone: normalizedPhone,
+    college: String(payload.college).trim(),
+    department: String(payload.department).trim(),
+    year: String(payload.year).trim(),
+    events: eventsArray,
+    eventsText: eventsAsString,
+    participationType,
+    teamName: participationType === "team" ? teamName : "",
+    teamMembers:
+      participationType === "team"
+        ? teamMembers
+        : [String(payload.name).trim()],
+    eventDetails,
+    paymentReference: String(payload.paymentReference).trim(),
+    paymentStatus: "submitted",
+    paymentVerifiedBy: "",
+    paymentVerifiedAt: null,
+    regId: String(payload.regId).trim(),
+    createdAt: String(payload.createdAt).trim(),
+    validationStatus: "pending",
+    validationMessage: "Verification in progress",
+    invitationStatus: "queued",
+    invitationSentAt: null,
+    updatedAt: timestamp,
+    registrationType,
+  });
+
+  // If registration is from dashboard (onspot or online), send admit card immediately
+  if (registrationType === 'onspot' || registrationType === 'online') {
+    const invitation = await sendInvitationEmailWithAdmitCard({
       name: String(payload.name).trim(),
       email: normalizedEmail,
       phone: normalizedPhone,
       college: String(payload.college).trim(),
       department: String(payload.department).trim(),
       year: String(payload.year).trim(),
-      events: eventsArray,
-      eventsText: eventsAsString,
-      participationType,
-      teamName: participationType === "team" ? teamName : "",
-      teamMembers:
-        participationType === "team"
-          ? teamMembers
-          : [String(payload.name).trim()],
-      eventDetails,
-      paymentReference: String(payload.paymentReference).trim(),
-      paymentStatus: "submitted",
-      paymentVerifiedBy: "",
-      paymentVerifiedAt: null,
       regId: String(payload.regId).trim(),
-      createdAt: String(payload.createdAt).trim(),
-      validationStatus: "pending",
-      validationMessage: "Verification in progress",
-      invitationStatus: "queued",
-      invitationSentAt: null,
-      updatedAt: timestamp,
+      events: eventsArray,
+      participationType,
+      teamName: participationType === 'team' ? teamName : '',
+      teamMembers: participationType === 'team' ? teamMembers : [String(payload.name).trim()],
+      paymentReference: String(payload.paymentReference).trim(),
     });
-
-    setImmediate(() => {
-      runRegistrationValidationWorkflow({
-        id: insertResult.lastID,
-        name: String(payload.name).trim(),
-        email: normalizedEmail,
-        phone: normalizedPhone,
-        college: String(payload.college).trim(),
-        department: String(payload.department).trim(),
-        year: String(payload.year).trim(),
-        regId: String(payload.regId).trim(),
-        events: eventsArray,
-        participationType,
-        teamName: participationType === "team" ? teamName : "",
-        teamMembers:
-          participationType === "team"
-            ? teamMembers
-            : [String(payload.name).trim()],
-        paymentReference: String(payload.paymentReference).trim(),
-      });
-    });
-
     return res.status(201).json({
-      success: true,
-      id: insertResult.lastID,
-      message:
-        "Registration saved. Email and phone verification is running in background. Invitation mail will be sent after verification.",
-    });
-  } catch (error) {
-    reportError(error, { route: "/api/register", method: "POST" });
-
-    if (error?.code === 11000) {
-      return res.status(409).json({
-        success: false,
-        message: "Registration ID already exists. Please resubmit.",
-      });
-    }
-
-    return res.status(500).json({
-      success: false,
-      message: "Could not save registration",
-      error: error.message,
+      success: invitation.sent,
+      message: invitation.sent ? 'Admit card sent!' : `Failed to send admit card: ${invitation.reason}`,
     });
   }
+
+  // ...existing logic for other registration types...
+  setImmediate(() => {
+    runRegistrationValidationWorkflow({
+      id: insertResult.lastID,
+      name: String(payload.name).trim(),
+      email: normalizedEmail,
+      phone: normalizedPhone,
+      college: String(payload.college).trim(),
+      department: String(payload.department).trim(),
+      year: String(payload.year).trim(),
+      regId: String(payload.regId).trim(),
+      events: eventsArray,
+      participationType,
+      teamName: participationType === 'team' ? teamName : '',
+      teamMembers: participationType === 'team' ? teamMembers : [String(payload.name).trim()],
+      paymentReference: String(payload.paymentReference).trim(),
+    });
+  });
+  return res.status(201).json({
+    success: true,
+    id: insertResult.lastID,
+    message: 'Registration saved. Email and phone verification is running in background. Invitation mail will be sent after verification.',
+  });
 });
 
 app.get("/api/registrations", requireAdminAuth, async (req, res) => {
