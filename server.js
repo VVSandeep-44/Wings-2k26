@@ -546,6 +546,9 @@ async function sendInvitationEmailWithAdmitCard({
       };
     }
 
+    // Log invitation result for debugging
+    console.log('[AdmitCardEmail] Sending to:', email, 'Result:', invitation);
+
     return { sent: true };
   } catch (error) {
     return {
