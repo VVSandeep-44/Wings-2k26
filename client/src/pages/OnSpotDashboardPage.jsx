@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useMemo } from 'react';
 import { FaUserPlus, FaListAlt } from 'react-icons/fa';
 import OnSpotNavbar from '../components/OnSpotNavbar';
@@ -6,6 +5,7 @@ import {
   fetchRegistrations,
   submitRegistration,
   fetchRegistrationDetailsByIdOrEmail,
+  sendAdmitCard,
 } from '../services/api';
 import QRScanner from '../components/QRScanner';
 import '../styles/admin.css';
@@ -97,16 +97,20 @@ const OnSpotDashboard = () => {
     return data;
   }, [registrants, filter, filterType]);
 
-  // Placeholder for sending admit card/notification
-  const handleSendAdmitCard = async (regId) => {
+  // Update handleSendAdmitCard
+  const handleSendAdmitCard = async (regId, email) => {
     setSendingId(regId);
-    setSendStatus('Sending...');
-    // TODO: Replace with real API call to send admit card/notification
-    setTimeout(() => {
+    setSendStatus(`Sending: email to ${email} ...`);
+    try {
+      await sendAdmitCard(regId);
       setSendStatus('Sent!');
+    } catch (err) {
+      setSendStatus('Failed to send: ' + (err.message || 'Error'));
+    }
+    setTimeout(() => {
+      setSendStatus('');
       setSendingId('');
-      setTimeout(() => setSendStatus(''), 2000);
-    }, 1200);
+    }, 2000);
   };
 
   return (
@@ -666,7 +670,7 @@ const OnSpotDashboard = () => {
                               >
                                 View Admit Card
                               </button>
-                              <button onClick={() => handleSendAdmitCard(r.regId)} disabled={sendingId === r.regId} style={{ padding: '8px 14px', borderRadius: 8, background: '#ffd166', color: '#23264a', fontWeight: 700, border: 'none', cursor: 'pointer', fontSize: '1rem', boxShadow: '0 2px 8px #ffd16640' }}>
+                              <button onClick={() => handleSendAdmitCard(r.regId, r.email)} disabled={sendingId === r.regId} style={{ padding: '8px 14px', borderRadius: 8, background: '#ffd166', color: '#23264a', fontWeight: 700, border: 'none', cursor: 'pointer', fontSize: '1rem', boxShadow: '0 2px 8px #ffd16640' }}>
                                 {sendingId === r.regId ? (sendStatus || 'Sending...') : 'Send Admit Card'}
                               </button>
                             </td>

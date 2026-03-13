@@ -1421,3 +1421,39 @@ process.on("uncaughtException", (error) => {
 });
 
 bootstrap();
+
+// Manual admit card send endpoint
+app.post('/api/send-admit-card', requireAdminAuth, async (req, res) => {
+  try {
+    const { regId } = req.body;
+    if (!regId) {
+      return res.status(400).json({ success: false, message: 'regId is required' });
+    }
+    // Find registration by regId
+    const registration = await getRegistrationByRegId(regId);
+    if (!registration) {
+      return res.status(404).json({ success: false, message: 'Registration not found' });
+    }
+    // Send admit card
+    const invitation = await sendInvitationEmailWithAdmitCard({
+      name: registration.name,
+      email: registration.email,
+      phone: registration.phone,
+      college: registration.college,
+      department: registration.department,
+      year: registration.year,
+      regId: registration.regId,
+      events: registration.events,
+      participationType: registration.participationType,
+      teamName: registration.teamName,
+      teamMembers: registration.teamMembers,
+      paymentReference: registration.paymentReference,
+    });
+    return res.json({
+      success: invitation.sent,
+      message: invitation.sent ? 'Admit card sent!' : `Failed to send admit card: ${invitation.reason}`,
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+});

@@ -297,3 +297,17 @@ export const fetchPublicRegistrationDetails = async (regId, token) => {
 
     return result.data;
 };
+
+export const sendAdmitCard = async (regId) => {
+    const response = await fetch(buildApiUrl('/api/send-admit-card'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ regId }),
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok || !result.success) {
+        throw new Error(result.message || 'Failed to send admit card');
+    }
+    return result;
+};
